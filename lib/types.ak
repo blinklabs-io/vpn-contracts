@@ -1,15 +1,26 @@
-use cardano/address.{Address}
+use aiken/crypto.{VerificationKeyHash}
+use cardano/assets.{AssetName}
 
 pub type VPNDatum {
   VPNReferenceData { pricing: Pairs<Int, Int>, regions: List<ByteArray> }
-  VPNData { owner: Address, region: ByteArray, expiration_time: Int }
+  VPNData {
+    owner: VerificationKeyHash,
+    region: ByteArray,
+    expiration_time: Int,
+  }
 }
 
 pub type VPNAction {
-  MintVPNAccess { owner: Address, region: ByteArray, selection: Int }
-  UpdateReferenceData
-  ExtendVPNAccess
-  Reimburse
-  UnlockPayment
+  MintVPNAccess {
+    owner: VerificationKeyHash,
+    region: ByteArray,
+    selection: Int,
+  }
+  UpdateReferenceData { pricing: Pairs<Int, Int>, regions: List<ByteArray> }
+  ExtendVPNAccess {
+    maybe_new_owner: Option<VerificationKeyHash>,
+    token_name: AssetName,
+    selection: Int,
+  }
   BurnVPNAccess
 }

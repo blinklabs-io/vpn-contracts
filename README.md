@@ -55,14 +55,14 @@ Example:
 **VPNData** initialized for every user and attached to a token. Each token has a unique name and identifies a VPN access. Token names are the output UTXO hash of the minting transaction.
 
 ```aiken
-VPNData { 
-    owner: Address,
+  VPNData {
+    owner: VerificationKeyHash,
     region: ByteArray,
-    expiration_time: Int 
-    }
+    expiration_time: Int,
+  }
 ```
 
-- owner = Cardano address used for payment
+- owner = Public Key Hash of the owner
 - region = Desired VPN server region
 - expiration_time = Absolute expiration timestamp (in slots) for VPN access
 
@@ -71,21 +71,7 @@ Example:
 {
     "constructor": 1,
     "fields": [
-      {
-        "constructor": 0,
-        "fields": [
-          {
-            "constructor": 0,
-            "fields": [
-              {"bytes": "a1b2c3d4e5f6789012345678901234567890123456789012abcd"}
-            ]
-          },
-          {
-            "constructor": 1,
-            "fields": []
-          }
-        ]
-      },
+      {"bytes": "a1b2c3d4e5f6789012345678901234567890123456789012abcd"},
       {"bytes": "757320656173742d31"},
       {"int": 125000000}
     ]
