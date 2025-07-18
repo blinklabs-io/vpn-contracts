@@ -2,7 +2,7 @@ export REPO_HOME="$HOME/blinklabs/vpn-contracts" #path to this repository
 export NETWORK_DIR_PATH="$REPO_HOME/preprod" # path to network in use (preprod/private)
 export TESTNET_MAGIC=1
 
-export VPN_TX_REF="b32277b746cf0f8f9c84b9fcd1e07fdf53bbdddad25942ada26a086a2b178868#1"
+export VPN_TX_REF="3588c6f7d5fbd80b6bfc2ad2d6ad595a7fc750361909f89cf2e911519d1fbdea#0"
 export TX_PATH="$NETWORK_DIR_PATH/tx"
 export EMPTY_TX="$TX_PATH/empty-tx.raw"
 
@@ -28,12 +28,6 @@ blake2b_hash() {
     
     local le_index=""
     
-    # Stop if input is zero
-    if (( index_part == 0 )); then
-        echo ""
-        return
-    fi
-
     # Extract bytes one by one (little-endian order)
     while (( index_part > 0 )); do
         byte=$(( index_part & 0xFF ))
@@ -129,6 +123,17 @@ generate_vpn_extend_redeemer_json() {
       },
       {bytes: $b2},
       {int: $i1}
+    ]
+  }'
+}
+
+generate_vpn_burn_redeemer_json() {
+  local tn="$1"
+
+  jq -n --arg b1 "$tn" '{
+    constructor: 3,
+    fields: [
+      {bytes: $b1}
     ]
   }'
 }

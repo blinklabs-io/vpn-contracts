@@ -3,10 +3,10 @@
 ## Preprod
 Data can be found in `preprod/`.
 
-- reference nft policy id: `4481fb794c89d84faec248eeb50543f2b321946e7a5ecaff0ded4455`
-- vpn access token policy id: `28094239af9581411aecb5e508e2db68d3127c42008e1316e08fc169`
-- vpn validator address: `addr_test1zq5qjs3e472czsg6aj672z8zmd5dxynuggqguyckuz8uz62jduk3c6ecrpkrk8qqlr4ep37cx03ytlcn70n93zyemj6sr5gmrj`
-- vpn reference script tx hash: `b32277b746cf0f8f9c84b9fcd1e07fdf53bbdddad25942ada26a086a2b178868#1`
+- reference nft policy id: `85b95fee1b7cf6f2a7dca818e77b901ff3c1b6aae4473219cf56902b`
+- vpn access token policy id: `f6653983683830202a722ac3b0a85785c41b2222fd4ec0a2b13046f5`
+- vpn validator address: `addr_test1zrmx2wvrdqurqgp2wg4v8v9g27zugxezyt75as9zkycyda2jduk3c6ecrpkrk8qqlr4ep37cx03ytlcn70n93zyemj6s4mgt63`
+- vpn reference script tx hash: `3588c6f7d5fbd80b6bfc2ad2d6ad595a7fc750361909f89cf2e911519d1fbdea#0`
 
 ## Datums
 
