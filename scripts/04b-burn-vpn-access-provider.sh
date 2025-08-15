@@ -3,33 +3,43 @@
 USER=$1
 
 source env.sh
-FILE_NAME="update-reference"
+FILE_NAME="burn-vpn-access-provider"
 
 USER_ADDR=$(cat $WALLET_PATH/$USER.addr)
 UTXO_IN_ADA=$(get_address_biggest_lovelace $USER_ADDR)
+UTXO_VPN_IN="8a619902f2c54d0a7005c38511a567488b498e98c7cb1cf31276f3749b0d02a4#0"
 echo "UTXO_IN_ADA: $UTXO_IN_ADA"
 VPN_ADDR=$(cat $VALIDATOR_PATH/vpn.addr)
 NFT_CS=$(cardano-cli hash script --script-file $VALIDATOR_PATH/nft.plutus)
 echo "NFT_CS: $NFT_CS"
-UTXO_VPN_REF_DATA=$(get_UTxO_by_token $VPN_ADDR $NFT_CS.70726f7669646572)
-echo "UTXO_VPN_REF_DATA: $UTXO_VPN_REF_DATA"
-DATUM_PATH=$DATUMS_PATH/vpn_reference_data.json
-REDEEMER_PATH=$REDEEMERS_PATH/update_ref_data.json
-redeemer=$(generate_vpn_update_ref_data_redeemer_json "$(cat $DATUM_PATH)")
+VPN_CS=$(cardano-cli hash script --script-file $VALIDATOR_PATH/vpn.plutus)
+echo "VPN_CS: $VPN_CS"
+TN=86f83cb55933d0aaced147988d9c1c7b5ed390ff6a99b842864f1f79bcbde6f4  #$(blake2b_hash $UTXO_IN_ADA)
+echo "TN: $TN"
+USER_PKH=$(cardano-cli address key-hash --payment-verification-key-file $WALLET_PATH/$USER.vkey)
+cur_slot=$(cardano-cli query tip  $TESTNET_MAGIC | jq '.slot')
+echo "cur_slot: $cur_slot"
+REDEEMER_PATH=$REDEEMERS_PATH/"$USER"_burn-provider.json
+redeemer=$(generate_vpn_burn_redeemer_json $TN)
+echo "redeemer: $redeemer"
 echo $redeemer > $REDEEMER_PATH
 
 cardano-cli conway transaction build \
      ${TESTNET_MAGIC} \
     --tx-in-collateral ${UTXO_IN_ADA} \
     --tx-in ${UTXO_IN_ADA} \
-    --tx-in $UTXO_VPN_REF_DATA \
+    --tx-in $UTXO_VPN_IN \
     --spending-tx-in-reference $VPN_TX_REF \
     --spending-plutus-script-v3 \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file $REDEEMER_PATH \
+    --mint "-1 $VPN_CS.$TN" \
+    --mint-tx-in-reference $VPN_TX_REF \
+    --mint-plutus-script-v3 \
+    --mint-reference-tx-in-redeemer-file $REDEEMER_PATH \
+    --policy-id $VPN_CS \
     --change-address $USER_ADDR \
-    --tx-out $VPN_ADDR+2000000+"1 $NFT_CS.70726f7669646572" \
-    --tx-out-inline-datum-file $DATUM_PATH \
+    --invalid-before $cur_slot \
     --required-signer $WALLET_PATH/$USER.skey \
     --out-file $TX_PATH/$FILE_NAME.raw
 

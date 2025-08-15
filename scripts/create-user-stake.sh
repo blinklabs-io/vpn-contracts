@@ -13,13 +13,13 @@ cardano-cli conway stake-address key-gen \
     --signing-key-file $WALLET_PATH/$USER-stake.skey
 
 cardano-cli conway stake-address build \
-    --testnet-magic ${TESTNET_MAGIC} \
+     ${TESTNET_MAGIC} \
     --stake-verification-key-file $WALLET_PATH/$USER-stake.vkey \
     --out-file $WALLET_PATH/$USER-stake.addr
 
 cardano-cli address build \
     --payment-verification-key-file $WALLET_PATH/$USER.vkey \
     --stake-verification-key-file $WALLET_PATH/$USER-stake.vkey \
-    --testnet-magic ${TESTNET_MAGIC} \
+     ${TESTNET_MAGIC} \
     --out-file $WALLET_PATH/$USER.addr
 

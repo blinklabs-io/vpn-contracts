@@ -12,7 +12,7 @@ echo "UTXO_IN_ADA: $UTXO_IN_ADA"
 VPN_ADDR=$(cat $VALIDATOR_PATH/vpn.addr)
 NFT_CS=$(cardano-cli hash script --script-file $VALIDATOR_PATH/nft.plutus)
 echo "NFT_CS: $NFT_CS"
-UTXO_VPN_REF_DATA=$(get_UTxO_by_token $VPN_ADDR $NFT_CS.61646d696e)
+UTXO_VPN_REF_DATA=$(get_UTxO_by_token $VPN_ADDR $NFT_CS.70726f7669646572)
 echo "UTXO_VPN_REF_DATA: $UTXO_VPN_REF_DATA"
 VPN_FILE="$VALIDATOR_PATH/vpn.plutus"
 VPN_CS=$(cardano-cli hash script --script-file $VALIDATOR_PATH/vpn.plutus)
@@ -22,7 +22,7 @@ echo "TN: $TN"
 USER_PKH=$(cardano-cli address key-hash --payment-verification-key-file $WALLET_PATH/$USER.vkey)
 #cur_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 cur_time=$(date -u --date="now - 1000 seconds" +"%Y-%m-%dT%H:%M:%SZ")
-cur_slot=$(cardano-cli query slot-number "$cur_time" --testnet-magic $TESTNET_MAGIC)
+cur_slot=$(cardano-cli query slot-number "$cur_time"  $TESTNET_MAGIC)
 #EX_UTC=$(( 1750786130200 + 259200 ))
 #echo "cur_time: $EX_UTC"
 EX_UTC=$(( $(date -u --date="$cur_time" +%s%3N) + 259200 ))
@@ -35,7 +35,7 @@ redeemer=$(generate_vpn_extend_redeemer_json $USER_PKH $TN 0)
 echo $redeemer > $REDEEMER_PATH
 
 cardano-cli conway transaction build \
-    --testnet-magic ${TESTNET_MAGIC} \
+     ${TESTNET_MAGIC} \
     --tx-in-collateral ${UTXO_IN_ADA} \
     --tx-in ${UTXO_IN_ADA} \
     --read-only-tx-in-reference $UTXO_VPN_REF_DATA \
@@ -53,9 +53,9 @@ cardano-cli conway transaction build \
     --out-file $TX_PATH/$FILE_NAME.raw
 
 cardano-cli conway transaction sign \
-    --testnet-magic ${TESTNET_MAGIC} \
+     ${TESTNET_MAGIC} \
     --tx-body-file $TX_PATH/$FILE_NAME.raw \
     --out-file $TX_PATH/$FILE_NAME.sign \
     --signing-key-file $WALLET_PATH/$USER.skey
 
-cardano-cli conway transaction submit --testnet-magic ${TESTNET_MAGIC} --tx-file $TX_PATH/$FILE_NAME.sign
+cardano-cli conway transaction submit  ${TESTNET_MAGIC} --tx-file $TX_PATH/$FILE_NAME.sign

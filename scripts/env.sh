@@ -1,13 +1,13 @@
 export REPO_HOME="$HOME/blinklabs/vpn-contracts" #path to this repository
-export NETWORK_DIR_PATH="$REPO_HOME/preprod" # path to network in use (preprod/private)
-export TESTNET_MAGIC=1
+export NETWORK_DIR_PATH="$REPO_HOME/mainnet" # path to network in use (preprod/private)
+export TESTNET_MAGIC=$(echo "--mainnet")
 
-export VPN_TX_REF="3588c6f7d5fbd80b6bfc2ad2d6ad595a7fc750361909f89cf2e911519d1fbdea#0"
+export VPN_TX_REF="df6922b3581c819888f28844a195b16201edff60e66422e0add11cf1851edf13#1" # mainnet
 export TX_PATH="$NETWORK_DIR_PATH/tx"
-export EMPTY_TX="$TX_PATH/empty-tx.raw"
+#export EMPTY_TX="$TX_PATH/empty-tx.raw"
 
 export WALLET_PATH="$NETWORK_DIR_PATH/wallets"
-export WALLET_REF_SCR_NAME="wallet-ref-scr"
+#export WALLET_REF_SCR_NAME="wallet-ref-scr"
 
 export VALIDATOR_PATH="$NETWORK_DIR_PATH/validators"
 export DATUMS_PATH="$NETWORK_DIR_PATH/datums"
@@ -140,7 +140,7 @@ generate_vpn_burn_redeemer_json() {
 
 # $1 = address
 get_address_biggest_lovelace(){
-    cardano-cli query utxo --testnet-magic ${TESTNET_MAGIC} --address $1 --out-file utxos.tmp
+    cardano-cli query utxo ${TESTNET_MAGIC} --address $1 --out-file utxos.tmp
     max_utxo=$(cat utxos.tmp | jq 'with_entries(select((.value.value | length) == 1)) | to_entries | max_by(.value.value.lovelace)')
     rm utxos.tmp
     echo $(echo $max_utxo | jq -r '.key')
@@ -151,7 +151,7 @@ get_UTxO_by_token() {
     local TOKEN="$2"
 
     local utxo_info
-    utxo_info=$(cardano-cli query utxo --address "$ADDRESS" --testnet-magic ${TESTNET_MAGIC} | tail -n +3)
+    utxo_info=$(cardano-cli query utxo --address "$ADDRESS" ${TESTNET_MAGIC} | tail -n +3)
 
     local utxo_entries
     IFS=$'\n' read -r -d '' -a utxo_entries <<<"$utxo_info"

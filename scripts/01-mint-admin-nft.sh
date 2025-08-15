@@ -15,23 +15,23 @@ NFT_CS=$(cardano-cli hash script --script-file $NFT_FILE)
 echo "NFT_CS: $NFT_CS"
 
 cardano-cli conway transaction build \
-    --testnet-magic ${TESTNET_MAGIC} \
+    ${TESTNET_MAGIC} \
     --tx-in-collateral ${UTXO_IN_ADA} \
     --tx-in ${UTXO_IN_ADA} \
-    --mint "1 $NFT_CS.61646d696e" \
+    --mint "1 $NFT_CS.70726f7669646572" \
     --mint-script-file $VALIDATOR_PATH/nft.plutus \
-    --mint-redeemer-value '"admin"' \
-    --change-address $USER_ADDR \
-    --tx-out $VPN_ADDR+2000000+"1 $NFT_CS.61646d696e" \
+    --mint-redeemer-value '"provider"' \
+    --change-address addr1q9jtpf09kdhq22fc2z7vg8kuq57rrm6dqmcnn4txx3gmfk0rzr27g03klu862usxqsru794d03gzkk8n86ta34n85z0sxn2lhj \
+    --tx-out $VPN_ADDR+2000000+"1 $NFT_CS.70726f7669646572" \
     --tx-out-inline-datum-file $DATUMS_PATH/vpn_reference_data.json \
-    --tx-out $USER_ADDR+16925370 \
+    --tx-out $USER_ADDR+16912440 \
     --tx-out-reference-script-file $VPN_FILE \
     --out-file $TX_PATH/$FILE_NAME.raw
 
 cardano-cli conway transaction sign \
-    --testnet-magic ${TESTNET_MAGIC} \
+    ${TESTNET_MAGIC} \
     --tx-body-file $TX_PATH/$FILE_NAME.raw \
     --out-file $TX_PATH/$FILE_NAME.sign \
     --signing-key-file $WALLET_PATH/$USER.skey
 
-cardano-cli conway transaction submit --testnet-magic ${TESTNET_MAGIC} --tx-file $TX_PATH/$FILE_NAME.sign
+cardano-cli conway transaction submit ${TESTNET_MAGIC} --tx-file $TX_PATH/$FILE_NAME.sign

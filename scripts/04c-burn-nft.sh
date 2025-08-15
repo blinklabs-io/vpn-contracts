@@ -3,7 +3,7 @@
 USER=$1
 
 source env.sh
-FILE_NAME="update-reference"
+FILE_NAME="burn-reference-nft"
 
 USER_ADDR=$(cat $WALLET_PATH/$USER.addr)
 UTXO_IN_ADA=$(get_address_biggest_lovelace $USER_ADDR)
@@ -28,8 +28,9 @@ cardano-cli conway transaction build \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file $REDEEMER_PATH \
     --change-address $USER_ADDR \
-    --tx-out $VPN_ADDR+2000000+"1 $NFT_CS.70726f7669646572" \
-    --tx-out-inline-datum-file $DATUM_PATH \
+    --mint "-1 $NFT_CS.70726f7669646572" \
+    --mint-script-file $VALIDATOR_PATH/nft.plutus \
+    --mint-redeemer-value '"provider"' \
     --required-signer $WALLET_PATH/$USER.skey \
     --out-file $TX_PATH/$FILE_NAME.raw
 

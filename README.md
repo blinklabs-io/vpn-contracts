@@ -8,6 +8,14 @@ Data can be found in `preprod/`.
 - vpn validator address: `addr_test1zrmx2wvrdqurqgp2wg4v8v9g27zugxezyt75as9zkycyda2jduk3c6ecrpkrk8qqlr4ep37cx03ytlcn70n93zyemj6s4mgt63`
 - vpn reference script tx hash: `3588c6f7d5fbd80b6bfc2ad2d6ad595a7fc750361909f89cf2e911519d1fbdea#0`
 
+## Mainnet
+Data can be found in `mainnet/`
+
+- reference nft policy id: `a7933ba55ab251ae2537027d678779d7c13ed8f86d1075c86b615c6d`
+- vpn access token policy id: `8e1b1737ebaa0fd821393b6065a10ea522dd861b324a5344fe0db7b0`
+- vpn validator address: `addr1zx8pk9ehaw4qlkpp8yakqedpp6jj9hvxrvey556ylcxm0vxgx8yp9m2ssx9v9vv60a3xudznxtw68vr8l0rpw26u2gfqqv5eww`
+- vpn reference script tx hash: `df6922b3581c819888f28844a195b16201edff60e66422e0add11cf1851edf13#1`
+
 ## Datums
 
 ### VPN Provider

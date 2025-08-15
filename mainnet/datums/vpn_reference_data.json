@@ -1,0 +1,49 @@
+{
+    "constructor": 0,
+    "fields": [
+        {
+            "list": [
+                {
+                    "constructor": 0,
+                    "fields": [
+                        {
+                            "int": 2592000000
+                        },
+                        {
+                            "int": 10000000
+                        }
+                    ]
+                },
+                {
+                    "constructor": 0,
+                    "fields": [
+                        {
+                            "int": 7776000000
+                        },
+                        {
+                            "int": 30000000
+                        }
+                    ]
+                },
+                {
+                    "constructor": 0,
+                    "fields": [
+                        {
+                            "int": 15552000000
+                        },
+                        {
+                            "int": 60000000
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "list": [
+                {
+                    "bytes": "757331"
+                }
+            ]
+        }
+    ]
+}

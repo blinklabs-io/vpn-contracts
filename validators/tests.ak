@@ -6,6 +6,7 @@ use cardano/transaction.{
   Datum, InlineDatum, Input, NoDatum, Output, OutputReference, Transaction,
   placeholder,
 }
+use nft
 use types.{
   BurnVPNAccess, ExtendVPNAccess, MintVPNAccess, Pricing, UpdateReferenceData,
   VPNAction, VPNData, VPNDatum, VPNReferenceData,
@@ -78,6 +79,36 @@ fn vpn_output(datum: VPNDatum) -> Output {
       1,
     ),
     InlineDatum(datum),
+  )
+}
+
+test mint_nft() {
+  nft.nft.mint(
+    mock_utxo_ref("0", 0),
+    "provider",
+    reference_cs,
+    Transaction {
+      ..placeholder,
+      inputs: [
+        Input(
+          mock_utxo_ref("0", 0),
+          mock_pub_key_output(mock_pub_key_address("a"), from_lovelace(5)),
+        ),
+      ],
+      mint: from_asset(reference_cs, "provider", 1),
+    },
+  )
+}
+
+test burn_nft() {
+  nft.nft.mint(
+    mock_utxo_ref("0", 0),
+    "provider",
+    reference_cs,
+    Transaction {
+      ..placeholder,
+      mint: from_asset(reference_cs, "provider", -1),
+    },
   )
 }
 
@@ -211,6 +242,30 @@ const update_reference_data_succeed_tx =
     ],
     extra_signatories: [provider_pkh],
   }
+
+const spend_burn_succeed_tx =
+  Transaction {
+    ..placeholder,
+    inputs: [Input { ..nft_input, output_reference: mock_utxo_ref("0", 0) }],
+    mint: from_asset(reference_cs, "provider", -1),
+    extra_signatories: [provider_pkh],
+  }
+
+test update_reference_data_burn_nft_succeed() {
+  vpn_spend(
+    VPNReferenceData {
+      pricing: [Pricing(5, 10), Pricing(10, 20), Pricing(30, 50)],
+      regions: ["r1", "r2", "r3"],
+    },
+    UpdateReferenceData([], []),
+    spend_burn_succeed_tx,
+  ) && nft.nft.mint(
+    mock_utxo_ref("0", 0),
+    "provider",
+    reference_cs,
+    spend_burn_succeed_tx,
+  )
+}
 
 test update_reference_data_succeed() {
   vpn_spend(

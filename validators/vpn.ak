@@ -2,8 +2,9 @@ use aiken/builtin.{head_list, unconstr_fields}
 use aiken/collection/dict.{values}
 use aiken/collection/list.{all, any, at, has}
 use aiken/crypto.{VerificationKeyHash}
+use aiken/option.{is_none}
 use cardano/address.{Address, Script, StakeCredential, VerificationKey}
-use cardano/assets.{PolicyId, tokens}
+use cardano/assets.{PolicyId, policies, tokens}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, find_input,
 }
@@ -72,16 +73,21 @@ validator vpn(
       UpdateReferenceData { pricing, regions } -> {
         let Transaction { inputs, outputs, extra_signatories, .. } = tx
         expect Some(own_input) = find_input(inputs, output_reference)
-        has(extra_signatories, provider_pkh) && any(
-          outputs,
-          fn(output) {
-            own_input.output.address == output.address && output.datum == InlineDatum(
-              VPNReferenceData(pricing, regions),
-            ) && policy_id_present_in_output(output, reference_policy_id) && only_2_tokens(
-              output.value,
-            )
-          },
-        ) && policy_id_present_in_output(own_input.output, reference_policy_id)
+        has(extra_signatories, provider_pkh) && policy_id_present_in_output(
+          own_input.output,
+          reference_policy_id,
+        ) && (
+          any(
+            outputs,
+            fn(output) {
+              own_input.output.address == output.address && output.datum == InlineDatum(
+                VPNReferenceData(pricing, regions),
+              ) && policy_id_present_in_output(output, reference_policy_id) && only_2_tokens(
+                output.value,
+              ) && is_none(output.reference_script)
+            },
+          ) || policies(tx.mint) == [reference_policy_id]
+        )
       }
       ExtendVPNAccess { maybe_new_owner, token_name, selection } -> {
         let Transaction {
