@@ -129,7 +129,7 @@ validator vpn(
           VPNData(
             owner_pkh,
             region,
-            if now > expiration_time {
+            if now < expiration_time {
               expiration_time + duration
             } else {
               now + duration

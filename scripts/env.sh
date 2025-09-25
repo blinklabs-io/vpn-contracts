@@ -1,13 +1,12 @@
 export REPO_HOME="$HOME/blinklabs/vpn-contracts" #path to this repository
 export NETWORK_DIR_PATH="$REPO_HOME/mainnet" # path to network in use (preprod/private)
 export TESTNET_MAGIC=$(echo "--mainnet")
+#export TESTNET_MAGIC=$(echo "--testnet-magic 1")
 
-export VPN_TX_REF="df6922b3581c819888f28844a195b16201edff60e66422e0add11cf1851edf13#1" # mainnet
+export VPN_TX_REF="c6860c0ea1295776fa7bb1b7b198f9c71751fef2c404f02f183b08b888fa991e#1" # mainnet
 export TX_PATH="$NETWORK_DIR_PATH/tx"
-#export EMPTY_TX="$TX_PATH/empty-tx.raw"
 
 export WALLET_PATH="$NETWORK_DIR_PATH/wallets"
-#export WALLET_REF_SCR_NAME="wallet-ref-scr"
 
 export VALIDATOR_PATH="$NETWORK_DIR_PATH/validators"
 export DATUMS_PATH="$NETWORK_DIR_PATH/datums"

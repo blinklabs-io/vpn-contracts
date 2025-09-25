@@ -314,7 +314,7 @@ const extend_vpn_access_succeed_tx =
     ],
     reference_inputs: [nft_input],
     outputs: [
-      vpn_output(VPNData(user_pkh, "r2", 139)),
+      vpn_output(VPNData(user_pkh, "r2", 140)),
       mock_pub_key_output(
         Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
         from_lovelace(50),
@@ -324,11 +324,29 @@ const extend_vpn_access_succeed_tx =
     extra_signatories: [user_pkh],
   }
 
-test extend_vpn_access_succeed() {
+test extend_vpn_access_succeed1() {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
     ExtendVPNAccess(None, output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
     extend_vpn_access_succeed_tx,
+  )
+}
+
+test extend_vpn_access_succeed2() {
+  let tx = extend_vpn_access_succeed_tx
+  vpn_spend(
+    VPNData(user_pkh, "r2", 108),
+    ExtendVPNAccess(None, output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
+    Transaction {
+      ..tx,
+      outputs: [
+        vpn_output(VPNData(user_pkh, "r2", 139)),
+        mock_pub_key_output(
+          Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
+          from_lovelace(50),
+        ),
+      ],
+    },
   )
 }
 

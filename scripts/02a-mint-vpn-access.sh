@@ -6,19 +6,22 @@ source env.sh
 FILE_NAME="vpn-access"
 
 selection=0
-price=5000000
-duration=1200000
+price=10000000
+duration=2592000000
 region=757331
 
 USER_ADDR=$(cat $WALLET_PATH/$USER.addr)
 UTXO_IN_ADA=$(get_address_biggest_lovelace $USER_ADDR)
+echo "UTXO_IN_ADA: $UTXO_IN_ADA"
 VPN_ADDR=$(cat $VALIDATOR_PATH/vpn.addr)
 UTXO_VPN_REF_DATA=$(get_UTxO_by_token $VPN_ADDR $(cardano-cli hash script --script-file $VALIDATOR_PATH/nft.plutus).70726f7669646572)
+echo "UTXO_VPN_REF_DATA: $UTXO_VPN_REF_DATA"
 VPN_CS=$(cardano-cli hash script --script-file $VALIDATOR_PATH/vpn.plutus)
+echo "VPN_CS: $VPN_CS"
 TN=$(blake2b_hash $UTXO_IN_ADA)
 echo "TN: $TN"
 USER_PKH=$(cardano-cli address key-hash --payment-verification-key-file $WALLET_PATH/$USER.vkey)
-cur_time=$(date -u --date="now - 200 seconds" +"%Y-%m-%dT%H:%M:%SZ")
+cur_time=$(date -u --date="now - 400 seconds" +"%Y-%m-%dT%H:%M:%SZ")
 echo "cur_time: $cur_time"
 cur_slot=$(cardano-cli query slot-number "$cur_time" ${TESTNET_MAGIC})
 EX_UTC=$(( $(date -u --date="$cur_time" +%s%3N) + $duration ))
