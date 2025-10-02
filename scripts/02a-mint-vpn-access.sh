@@ -6,9 +6,9 @@ source env.sh
 FILE_NAME="vpn-access"
 
 selection=0
-price=10000000
-duration=2592000000
-region=757331
+price=5000000
+duration=259200000
+region=757320656173742d31
 
 USER_ADDR=$(cat $WALLET_PATH/$USER.addr)
 UTXO_IN_ADA=$(get_address_biggest_lovelace $USER_ADDR)

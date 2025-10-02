@@ -1,9 +1,9 @@
 export REPO_HOME="$HOME/blinklabs/vpn-contracts" #path to this repository
-export NETWORK_DIR_PATH="$REPO_HOME/mainnet" # path to network in use (preprod/private)
-export TESTNET_MAGIC=$(echo "--mainnet")
+export NETWORK_DIR_PATH="$REPO_HOME/preprod" # path to network in use (preprod/private)
+export TESTNET_MAGIC=$(echo "--testnet-magic 1")
 #export TESTNET_MAGIC=$(echo "--testnet-magic 1")
 
-export VPN_TX_REF="c6860c0ea1295776fa7bb1b7b198f9c71751fef2c404f02f183b08b888fa991e#1" # mainnet
+export VPN_TX_REF="363fb149456226998f537df63cdfbab015ae4a10cb45bf427b89ffbc53f484c3#1" # mainnet
 export TX_PATH="$NETWORK_DIR_PATH/tx"
 
 export WALLET_PATH="$NETWORK_DIR_PATH/wallets"
@@ -116,10 +116,7 @@ generate_vpn_extend_redeemer_json() {
   jq -n --arg b1 "$pkh" --arg b2 "$tn" --argjson i1 "$selection" '{
     constructor: 2,
     fields: [
-      {constructor: 1,
-      fields: [
-        ]
-      },
+      {bytes: $b1},
       {bytes: $b2},
       {int: $i1}
     ]

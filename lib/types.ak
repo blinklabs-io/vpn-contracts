@@ -25,7 +25,7 @@ pub type VPNAction {
   }
   UpdateReferenceData { pricing: List<Pricing>, regions: List<ByteArray> }
   ExtendVPNAccess {
-    maybe_new_owner: Option<VerificationKeyHash>,
+    new_owner: VerificationKeyHash,
     token_name: AssetName,
     selection: Int,
   }

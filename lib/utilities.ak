@@ -2,7 +2,7 @@ use aiken/builtin.{
   head_list, integer_to_bytearray, snd_pair, unconstr_fields, unconstr_index,
 }
 use aiken/collection/dict.{empty, insert, size, to_pairs}
-use aiken/collection/list.{any, find}
+use aiken/collection/list.{any, at, find}
 use aiken/crypto.{blake2b_256}
 use aiken/interval.{Finite, IntervalBound}
 use aiken/option.{is_none}
@@ -15,7 +15,31 @@ use cardano/assets.{
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, ValidityRange,
 }
-use types.{VPNDatum}
+use types.{Pricing, VPNDatum}
+
+pub fn get_expiration_time_extend(
+  selection: Int,
+  reference_inputs: List<Input>,
+  reference_policy_id: PolicyId,
+  outputs: List<Output>,
+  provider_addr: Address,
+  now: Int,
+  expiration_time: Int,
+) -> Int {
+  expect pricing: List<Pricing> =
+    head_list(
+      unconstr_fields(get_ref_datum(reference_inputs, reference_policy_id)),
+    )
+  expect Some(Pricing { duration, price }) = at(pricing, selection)
+  let provider_paid = ada_paid_to(outputs, provider_addr, price)
+  if now < expiration_time && provider_paid {
+    expiration_time + duration
+  } else if provider_paid {
+    now + duration
+  } else {
+    fail
+  }
+}
 
 pub fn output_reference_to_tn(output_reference: OutputReference) -> ByteArray {
   blake2b_256(

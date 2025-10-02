@@ -7,7 +7,7 @@ FILE_NAME="extend-vpn-access"
 
 USER_ADDR=$(cat $WALLET_PATH/$USER.addr)
 UTXO_IN_ADA=$(get_address_biggest_lovelace $USER_ADDR)
-UTXO_VPN_IN="228ed68197413739cc62992874ff970df584e411a06343d2dc10e6be2fadff4a#0"
+UTXO_VPN_IN="955ecf7406f7e0399f197c50b3493c20c7574d99b3ff294abaeda63764532cc0#0"
 echo "UTXO_IN_ADA: $UTXO_IN_ADA"
 VPN_ADDR=$(cat $VALIDATOR_PATH/vpn.addr)
 NFT_CS=$(cardano-cli hash script --script-file $VALIDATOR_PATH/nft.plutus)
@@ -17,9 +17,10 @@ echo "UTXO_VPN_REF_DATA: $UTXO_VPN_REF_DATA"
 VPN_FILE="$VALIDATOR_PATH/vpn.plutus"
 VPN_CS=$(cardano-cli hash script --script-file $VALIDATOR_PATH/vpn.plutus)
 echo "VPN_CS: $VPN_CS"
-TN=45E9EF1D20CC8D0EC33F0F8E32E3C7EF56BE71121A8F85B484864642FE79F23A #$(blake2b_hash $UTXO_IN_ADA)
+TN=7189E28B9BB05C29D097F674BC428265B4C8C519B601889DC190ADE97312D9C2 #$(blake2b_hash $UTXO_IN_ADA)
 echo "TN: $TN"
 USER_PKH=$(cardano-cli address key-hash --payment-verification-key-file $WALLET_PATH/$USER.vkey)
+USER_PKH_VPN=$(cardano-cli address key-hash --payment-verification-key-file $WALLET_PATH/user1.vkey)
 #cur_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 cur_time=$(date -u --date="now - 1000 seconds" +"%Y-%m-%dT%H:%M:%SZ")
 cur_slot=$(cardano-cli query slot-number "$cur_time"  $TESTNET_MAGIC)
@@ -27,16 +28,14 @@ cur_slot=$(cardano-cli query slot-number "$cur_time"  $TESTNET_MAGIC)
 #echo "cur_time: $EX_UTC"
 CUR_UTC=$(( $(date -u --date="$cur_time" +%s%3N) ))
 echo "CUR_UTC: $CUR_UTC"
-echo "old: 1764579853000"
-echo "to add: 259200000"
-NEW_EX_TIME=$(( 1764579853000 + 259200000 ))
+NEW_EX_TIME=$(( 1759684095000 + 259200000 ))
 echo "NEW_EX_TIME: $NEW_EX_TIME"
-vpn_datum=$(generate_vpn_data_json $USER_PKH 757320656173742d32 $NEW_EX_TIME)
+vpn_datum=$(generate_vpn_data_json $USER_PKH_VPN 757320656173742d31 $NEW_EX_TIME)
 DATUM_PATH=$DATUMS_PATH/"$USER"_vpn_data.json
 REDEEMER_PATH=$REDEEMERS_PATH/user1_extend.json
 echo $vpn_datum > $DATUM_PATH
 cat $DATUM_PATH
-redeemer=$(generate_vpn_extend_redeemer_json $USER_PKH $TN 0)
+redeemer=$(generate_vpn_extend_redeemer_json "" $TN 0)
 echo $redeemer > $REDEEMER_PATH
 
 cardano-cli conway transaction build \
@@ -54,9 +53,8 @@ cardano-cli conway transaction build \
     --tx-out $(cat $WALLET_PATH/provider.addr)+5000000 \
     --change-address $USER_ADDR \
     --invalid-before $cur_slot \
-    --required-signer $WALLET_PATH/$USER.skey \
     --out-file $TX_PATH/$FILE_NAME.raw
-exit
+
 cardano-cli conway transaction sign \
      ${TESTNET_MAGIC} \
     --tx-body-file $TX_PATH/$FILE_NAME.raw \

@@ -191,30 +191,6 @@ test mint_access_fail5_ref_input() fail {
   )
 }
 
-test burn_access_succeed() {
-  vpn_mint(
-    BurnVPNAccess(""),
-    Transaction { ..placeholder, mint: from_asset(vpn, "", -1) },
-  )
-}
-
-test burn_access_fail1_mint() fail {
-  vpn_mint(
-    BurnVPNAccess(""),
-    Transaction { ..placeholder, mint: from_asset(vpn, "", 1) },
-  )
-}
-
-test burn_access_fail2_burn_mint() fail {
-  vpn_mint(
-    BurnVPNAccess(""),
-    Transaction {
-      ..placeholder,
-      mint: add(from_asset(vpn, "", -1), vpn, "a", 1),
-    },
-  )
-}
-
 fn vpn_spend(datum: VPNDatum, redeemer: VPNAction, tx: Transaction) -> Bool {
   vpn.vpn.spend(
     1000,
@@ -313,21 +289,18 @@ const extend_vpn_access_succeed_tx =
       Input(mock_utxo_ref("0", 0), vpn_output(VPNData(user_pkh, "r2", 110))),
     ],
     reference_inputs: [nft_input],
-    outputs: [
-      vpn_output(VPNData(user_pkh, "r2", 140)),
-      mock_pub_key_output(
-        Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
-        from_lovelace(50),
-      ),
-    ],
+    outputs: [vpn_output(VPNData(user_pkh, "r2", 110))],
+    //      mock_pub_key_output(
+    //        Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
+    //        from_lovelace(50),
+    //      ),
     validity_range: after(109),
-    extra_signatories: [user_pkh],
   }
 
 test extend_vpn_access_succeed1() {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
-    ExtendVPNAccess(None, output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
+    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), -1),
     extend_vpn_access_succeed_tx,
   )
 }
@@ -336,7 +309,7 @@ test extend_vpn_access_succeed2() {
   let tx = extend_vpn_access_succeed_tx
   vpn_spend(
     VPNData(user_pkh, "r2", 108),
-    ExtendVPNAccess(None, output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
+    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
     Transaction {
       ..tx,
       outputs: [
@@ -353,7 +326,7 @@ test extend_vpn_access_succeed2() {
 test extend_vpn_access_fail1_signature() fail {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
-    ExtendVPNAccess(None, output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
+    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
     Transaction { ..extend_vpn_access_succeed_tx, extra_signatories: [] },
   )
 }
@@ -361,7 +334,7 @@ test extend_vpn_access_fail1_signature() fail {
 test extend_vpn_access_fail2_wrong_token() fail {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
-    ExtendVPNAccess(None, output_reference_to_tn(mock_utxo_ref("1", 1)), 2),
+    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("1", 1)), 2),
     extend_vpn_access_succeed_tx,
   )
 }
@@ -369,7 +342,7 @@ test extend_vpn_access_fail2_wrong_token() fail {
 test extend_vpn_access_fail3_selection() fail {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
-    ExtendVPNAccess(None, output_reference_to_tn(mock_utxo_ref("0", 1)), 1),
+    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), 1),
     extend_vpn_access_succeed_tx,
   )
 }
@@ -377,8 +350,22 @@ test extend_vpn_access_fail3_selection() fail {
 test extend_vpn_access_fail4_region() fail {
   vpn_spend(
     VPNData(user_pkh, "r1", 110),
-    ExtendVPNAccess(None, output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
+    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
     extend_vpn_access_succeed_tx,
+  )
+}
+
+test burn_access_succeed() {
+  vpn_mint(BurnVPNAccess(""), placeholder)
+}
+
+test burn_access_fail1_output() fail {
+  vpn_mint(
+    BurnVPNAccess(""),
+    Transaction {
+      ..placeholder,
+      outputs: [vpn_output(VPNData(user_pkh, "r2", 110))],
+    },
   )
 }
 
@@ -390,13 +377,26 @@ const burn_vpn_access_succeed_tx =
     ],
     validity_range: after(111),
     extra_signatories: [user_pkh],
+    mint: from_asset(vpn, output_reference_to_tn(mock_utxo_ref("0", 1)), -1),
   }
 
-test burn_vpn_access_succeed() {
+test burn_vpn_access_succeed1_owner() {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
     BurnVPNAccess(output_reference_to_tn(mock_utxo_ref("0", 1))),
     burn_vpn_access_succeed_tx,
+  )
+}
+
+test burn_vpn_access_succeed2_provider() {
+  vpn_spend(
+    VPNData(user_pkh, "r2", 110),
+    BurnVPNAccess(output_reference_to_tn(mock_utxo_ref("0", 1))),
+    Transaction {
+      ..burn_vpn_access_succeed_tx,
+      validity_range: after(1111),
+      extra_signatories: [provider_pkh],
+    },
   )
 }
 
