@@ -7,6 +7,17 @@
                     "constructor": 0,
                     "fields": [
                         {
+                            "int": 3600000
+                        },
+                        {
+                            "int": 3000000
+                        }
+                    ]
+                },
+                {
+                    "constructor": 0,
+                    "fields": [
+                        {
                             "int": 259200000
                         },
                         {
