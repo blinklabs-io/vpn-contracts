@@ -1,5 +1,30 @@
 # vpn-contracts
 
+## Use cases
+
+* General
+  - assets/datums stay in contract
+  - client datum contains owner credential, region, and expiration
+  - on-chain refdata containing valid regions and plan price/duration combinations
+  - validation of plan selection and region against refdata
+  - validation that amount sent to "provider" wallet matches price of plan selection
+  - validation that expiration matches duration of plan selection
+
+* Signup
+  - mint unique asset
+
+* Renew/transfer
+  - spend existing asset from contract
+  - possible to perform renew and transfer in single TX
+  - Renew
+    - update expiration in datum
+    - anybody can renew for anybody else
+    - expiration adds to current expiration when not yet expired
+    - expiration adds to current time when already expired
+  - Transfer
+    - update owner credential in datum
+    - must be signed by current owner
+
 ## Preprod
 Data can be found in `preprod/`.
 
