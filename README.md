@@ -36,10 +36,10 @@ Data can be found in `preprod/`.
 ## Mainnet
 Data can be found in `mainnet/`
 
-- reference nft policy id: `a9ffba368834780fcbac8214bcc953b23e41cef206167064771bfc79`
-- vpn access token policy id: `69dfadbe53a463af0f0d5d1a04b7736669a9c579b4c9cb2d269a745c`
-- vpn validator address: `addr1z95altd72wjx8tc0p4w35p9hwdnxn2w90x6vnjedy6d8ghxgx8yp9m2ssx9v9vv60a3xudznxtw68vr8l0rpw26u2gfq4lxj45`
-- vpn reference script tx hash: `c6860c0ea1295776fa7bb1b7b198f9c71751fef2c404f02f183b08b888fa991e#1`
+- reference nft policy id: `1497d1a199633ac5908aa872c9771f9f736f0dc08337b071df2508b7`
+- vpn access token policy id: `926344085bfd2e62f3e74d50beff2e48274e1193ed719662d783db0b`
+- vpn validator address: `addr1zxfxx3qgt07juchnuax4p0hl9eyzwns3j0khr9nz67pakz7gx8yp9m2ssx9v9vv60a3xudznxtw68vr8l0rpw26u2gfq8cpcxm`
+- vpn reference script tx hash: `df1b318e4c45a162ef6b4ba00774018b54d4c873d5414b6d35b4858ec866512a#1`
 
 ## Datums
 
