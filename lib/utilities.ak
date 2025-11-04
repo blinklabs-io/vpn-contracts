@@ -7,7 +7,7 @@ use aiken/crypto.{blake2b_256}
 use aiken/interval.{Finite, IntervalBound}
 use aiken/option.{is_none}
 use aiken/primitive/bytearray.{concat}
-use cardano/address.{Address, Script}
+use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{
   AssetName, PolicyId, Value, from_lovelace, policies, quantity_of, to_dict,
   tokens, without_lovelace,
@@ -150,4 +150,10 @@ pub fn quantity_is_one(
 pub fn get_script_hash_from_address(address: Address) -> ByteArray {
   expect Script(script_hash) = address.payment_credential
   script_hash
+}
+
+// get the payment pub key hash of an address
+pub fn get_vkey_hash_from_address(address: Address) -> ByteArray {
+  expect VerificationKey(vkey_hash) = address.payment_credential
+  vkey_hash
 }

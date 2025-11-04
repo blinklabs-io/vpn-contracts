@@ -21,9 +21,16 @@ const provider_pkh = blake2b_224("provider_pkh")
 const provider_stake_pkh =
   Inline(VerificationKey(blake2b_224("provider_stake_pkh")))
 
+const provider_address =
+  Address(VerificationKey(provider_pkh), Some(provider_stake_pkh))
+
+//Some(provider_stake_pkh))
+
 const user_pkh = blake2b_224("user_pkh")
 
 const vpn = blake2b_224("vpn")
+
+const vpn_address = Address(Script(vpn), provider_address.stake_credential)
 
 fn mock_utxo_ref(id: ByteArray, ix: Int) -> OutputReference {
   OutputReference { transaction_id: blake2b_256(id), output_index: ix }
@@ -52,7 +59,7 @@ fn mock_pub_key_output(address: Address, value: Value) -> Output {
 
 fn nft_output(datum: VPNDatum) -> Output {
   Output {
-    address: Address(Script(vpn), Some(provider_stake_pkh)),
+    address: vpn_address,
     value: create_min_ada_token_value(reference_cs, "NFT", 1),
     datum: InlineDatum(datum),
     reference_script: None,
@@ -72,7 +79,7 @@ const nft_input =
 
 fn vpn_output(datum: VPNDatum) -> Output {
   mock_script_output(
-    Address(Script(vpn), Some(provider_stake_pkh)),
+    vpn_address,
     create_min_ada_token_value(
       vpn,
       output_reference_to_tn(mock_utxo_ref("0", 1)),
@@ -113,15 +120,7 @@ test burn_nft() {
 }
 
 fn vpn_mint(redeemer: VPNAction, tx: Transaction) -> Bool {
-  vpn.vpn.mint(
-    1000,
-    reference_cs,
-    provider_pkh,
-    provider_stake_pkh,
-    redeemer,
-    vpn,
-    tx,
-  )
+  vpn.vpn.mint(1000, reference_cs, provider_address, redeemer, vpn, tx)
 }
 
 const mint_acceess_succeed_tx =
@@ -139,10 +138,7 @@ const mint_acceess_succeed_tx =
     reference_inputs: [nft_input],
     outputs: [
       vpn_output(VPNData(user_pkh, "r2", 110)),
-      mock_pub_key_output(
-        Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
-        from_lovelace(20),
-      ),
+      mock_pub_key_output(provider_address, from_lovelace(20)),
     ],
     mint: from_asset(vpn, output_reference_to_tn(mock_utxo_ref("0", 1)), 1),
     validity_range: after(100),
@@ -195,8 +191,7 @@ fn vpn_spend(datum: VPNDatum, redeemer: VPNAction, tx: Transaction) -> Bool {
   vpn.vpn.spend(
     1000,
     reference_cs,
-    provider_pkh,
-    provider_stake_pkh,
+    provider_address,
     Some(datum),
     redeemer,
     mock_utxo_ref("0", 0),
@@ -290,10 +285,6 @@ const extend_vpn_access_succeed_tx =
     ],
     reference_inputs: [nft_input],
     outputs: [vpn_output(VPNData(user_pkh, "r2", 110))],
-    //      mock_pub_key_output(
-    //        Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
-    //        from_lovelace(50),
-    //      ),
     validity_range: after(109),
   }
 
@@ -314,10 +305,7 @@ test extend_vpn_access_succeed2() {
       ..tx,
       outputs: [
         vpn_output(VPNData(user_pkh, "r2", 139)),
-        mock_pub_key_output(
-          Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
-          from_lovelace(50),
-        ),
+        mock_pub_key_output(provider_address, from_lovelace(50)),
       ],
     },
   )

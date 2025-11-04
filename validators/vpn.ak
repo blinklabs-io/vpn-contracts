@@ -1,7 +1,6 @@
 use aiken/collection/list.{any, at, has}
-use aiken/crypto.{VerificationKeyHash}
 use aiken/option.{is_none}
-use cardano/address.{Address, Script, StakeCredential, VerificationKey}
+use cardano/address.{Address, Script}
 use cardano/assets.{PolicyId, policies, quantity_of}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, find_input,
@@ -12,16 +11,15 @@ use types.{
 }
 use utilities.{
   ada_paid_to, get_expiration_time_extend, get_now, get_ref_datum,
-  get_script_hash_from_address, has_vpn_data_output, only_2_tokens,
-  output_reference_to_tn, policy_id_present_in_output,
+  get_script_hash_from_address, get_vkey_hash_from_address, has_vpn_data_output,
+  only_2_tokens, output_reference_to_tn, policy_id_present_in_output,
   policy_id_present_in_outputs, quantity_is_one, single_mint,
 }
 
 validator vpn(
   wait_time: Int,
   reference_policy_id: PolicyId,
-  provider_pkh: VerificationKeyHash,
-  provider_stake_pkh: StakeCredential,
+  provider_address: Address,
 ) {
   mint(redeemer: VPNAction, policy_id: PolicyId, tx: Transaction) {
     when redeemer is {
@@ -41,19 +39,14 @@ validator vpn(
         let token_name = output_reference_to_tn(tx_ref)
         let is_single_mint = single_mint(mint, policy_id, token_name, 1)?
         let correct_region = has(regions, region)?
-        let provider_paid =
-          ada_paid_to(
-            outputs,
-            Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
-            price,
-          )?
+        let provider_paid = ada_paid_to(outputs, provider_address, price)?
         let owner_signed = has(extra_signatories, owner)?
         let input_consumed =
           any(inputs, fn(input) { input.output_reference == tx_ref })?
         let correct_output =
           has_vpn_data_output(
             outputs,
-            Address(Script(policy_id), Some(provider_stake_pkh)),
+            Address(Script(policy_id), provider_address.stake_credential),
             policy_id,
             token_name,
             VPNData(owner, region, get_now(validity_range) + duration),
@@ -80,7 +73,8 @@ validator vpn(
       UpdateReferenceData { pricing, regions } -> {
         let Transaction { inputs, outputs, extra_signatories, .. } = tx
         expect Some(own_input) = find_input(inputs, output_reference)
-        let provider_signed = has(extra_signatories, provider_pkh)
+        let provider_signed =
+          has(extra_signatories, get_vkey_hash_from_address(provider_address))
         let ref_policy_present_input =
           policy_id_present_in_output(own_input.output, reference_policy_id)
         let ref_policy_output_valid =
@@ -133,7 +127,7 @@ validator vpn(
               reference_inputs,
               reference_policy_id,
               outputs,
-              Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
+              provider_address,
               get_now(validity_range),
               expiration_time,
             )
@@ -170,7 +164,7 @@ validator vpn(
         let provider_signed =
           now > expiration_time + wait_time && has(
             extra_signatories,
-            provider_pkh,
+            get_vkey_hash_from_address(provider_address),
           )
         own_token_input? && is_burned? && ( owner_signed? || provider_signed? )
       }
