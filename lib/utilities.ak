@@ -2,7 +2,7 @@ use aiken/builtin.{
   head_list, integer_to_bytearray, snd_pair, unconstr_fields, unconstr_index,
 }
 use aiken/collection/dict.{empty, insert, size, to_pairs}
-use aiken/collection/list.{any, at, find}
+use aiken/collection/list.{any, at, filter, find}
 use aiken/crypto.{blake2b_256}
 use aiken/interval.{Finite, IntervalBound}
 use aiken/option.{is_none}
@@ -86,18 +86,18 @@ pub fn has_vpn_data_output(
   token_name: AssetName,
   vpn_data: VPNDatum,
 ) {
-  any(
-    outputs,
-    fn(output) {
-      (output.address == out_addr)? && quantity_is_one(
-        output.value,
-        policy_id,
-        token_name,
-      )? && (output.datum == InlineDatum(vpn_data))? && only_2_tokens(
-        output.value,
-      )?
-    },
-  )
+  expect [vpn_output] =
+    filter(
+      outputs,
+      fn(output) { policy_id_present_in_output(output, policy_id) },
+    )
+  (vpn_output.address == out_addr)? && quantity_is_one(
+    vpn_output.value,
+    policy_id,
+    token_name,
+  )? && (vpn_output.datum == InlineDatum(vpn_data))? && only_2_tokens(
+    vpn_output.value,
+  )?
 }
 
 pub fn single_mint(value: Value, cs: PolicyId, tn: AssetName, am: Int) -> Bool {
