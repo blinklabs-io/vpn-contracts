@@ -1,7 +1,7 @@
 use aiken/builtin.{
-  head_list, serialise_data, snd_pair, unconstr_fields, unconstr_index,
+  fst_pair, head_list, serialise_data, unconstr_fields, unconstr_index,
 }
-use aiken/collection/dict.{empty, insert, size, to_pairs}
+use aiken/collection/dict.{empty, insert, to_pairs}
 use aiken/collection/list.{any, at, filter, find}
 use aiken/crypto.{blake2b_256}
 use aiken/interval.{Finite, IntervalBound}
@@ -83,16 +83,17 @@ pub fn has_vpn_data_output(
       outputs,
       fn(output) { policy_id_present_in_output(output, policy_id) },
     )
-  (vpn_output.address == out_addr)? && quantity_is_one(
-    vpn_output.value,
+  (vpn_output.address == out_addr)? && (vpn_output.datum == InlineDatum(
+    vpn_data,
+  ))? && single_value(
+    without_lovelace(vpn_output.value),
     policy_id,
     token_name,
-  )? && (vpn_output.datum == InlineDatum(vpn_data))? && only_2_tokens(
-    vpn_output.value,
-  )?
+    1,
+  )
 }
 
-pub fn single_mint(value: Value, cs: PolicyId, tn: AssetName, am: Int) -> Bool {
+pub fn single_value(value: Value, cs: PolicyId, tn: AssetName, am: Int) -> Bool {
   insert(empty, tn, am) == tokens(value, cs)
 }
 
@@ -113,19 +114,15 @@ pub fn policy_id_present_in_outputs(
 
 /// check there are exactly 2 assets in an value
 /// used if exactly ada and a token should be in a value
-pub fn only_2_tokens(value: Value) -> Bool {
+pub fn two_token_value(value: Value, policy_id: PolicyId) -> Bool {
   when
     value
       |> without_lovelace
       |> to_dict
       |> to_pairs
   is {
-    [tnams] ->
-      (
-        tnams
-          |> snd_pair
-          |> size
-      ) == 1
+    [tnams] -> fst_pair(tnams) == policy_id
+
     _ -> False
   }
 }

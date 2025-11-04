@@ -12,8 +12,8 @@ use types.{
 use utilities.{
   ada_paid_to, get_expiration_time_extend, get_now, get_ref_datum,
   get_script_hash_from_address, get_vkey_hash_from_address, has_vpn_data_output,
-  only_2_tokens, output_reference_to_tn, policy_id_present_in_output,
-  policy_id_present_in_outputs, quantity_is_one, single_mint,
+  output_reference_to_tn, policy_id_present_in_output,
+  policy_id_present_in_outputs, quantity_is_one, single_value, two_token_value,
 }
 
 validator vpn(
@@ -37,7 +37,7 @@ validator vpn(
           get_ref_datum(reference_inputs, reference_policy_id)
         expect Some(Pricing { duration, price }) = at(pricing, selection)
         let token_name = output_reference_to_tn(tx_ref)
-        let is_single_mint = single_mint(mint, policy_id, token_name, 1)?
+        let is_single_mint = single_value(mint, policy_id, token_name, 1)?
         let correct_region = has(regions, region)?
         let provider_paid = ada_paid_to(outputs, provider_address, price)?
         let owner_signed = has(extra_signatories, owner)?
@@ -77,17 +77,19 @@ validator vpn(
           has(extra_signatories, get_vkey_hash_from_address(provider_address))
         let ref_policy_present_input =
           policy_id_present_in_output(output, reference_policy_id)
+
         let ref_policy_output_valid =
           any(
             outputs,
             fn(some_output) {
               output.address == some_output.address && some_output.datum == InlineDatum(
                 VPNReferenceData(pricing, regions),
-              ) && policy_id_present_in_output(some_output, reference_policy_id) && only_2_tokens(
-                some_output.value,
-              ) && is_none(some_output.reference_script)
+              ) && two_token_value(some_output.value, reference_policy_id) && is_none(
+                some_output.reference_script,
+              )
             },
           )
+
         let ref_policy_burned = policies(tx.mint) == [reference_policy_id]
 
         provider_signed? && ref_policy_present_input? && (
