@@ -72,20 +72,20 @@ validator vpn(
     when redeemer is {
       UpdateReferenceData { pricing, regions } -> {
         let Transaction { inputs, outputs, extra_signatories, .. } = tx
-        expect Some(own_input) = find_input(inputs, output_reference)
+        expect Some(Input { output, .. }) = find_input(inputs, output_reference)
         let provider_signed =
           has(extra_signatories, get_vkey_hash_from_address(provider_address))
         let ref_policy_present_input =
-          policy_id_present_in_output(own_input.output, reference_policy_id)
+          policy_id_present_in_output(output, reference_policy_id)
         let ref_policy_output_valid =
           any(
             outputs,
-            fn(output) {
-              own_input.output.address == output.address && output.datum == InlineDatum(
+            fn(some_output) {
+              output.address == some_output.address && some_output.datum == InlineDatum(
                 VPNReferenceData(pricing, regions),
-              ) && policy_id_present_in_output(output, reference_policy_id) && only_2_tokens(
-                output.value,
-              ) && is_none(output.reference_script)
+              ) && policy_id_present_in_output(some_output, reference_policy_id) && only_2_tokens(
+                some_output.value,
+              ) && is_none(some_output.reference_script)
             },
           )
         let ref_policy_burned = policies(tx.mint) == [reference_policy_id]
@@ -104,11 +104,10 @@ validator vpn(
           extra_signatories,
           ..
         } = tx
-        expect Some(own_input) = find_input(inputs, output_reference)
+        expect Some(Input { output, .. }) = find_input(inputs, output_reference)
 
         expect Some(VPNData { owner, region, expiration_time }) = opt_datum
-        let own_policy_id =
-          get_script_hash_from_address(own_input.output.address)
+        let own_policy_id = get_script_hash_from_address(output.address)
         let owner_pkh =
           if !(new_owner == "") {
             if has(extra_signatories, owner) {
@@ -138,26 +137,25 @@ validator vpn(
         let correct_output =
           has_vpn_data_output(
             outputs,
-            own_input.output.address,
+            output.address,
             own_policy_id,
             token_name,
             VPNData(owner_pkh, region, new_ex_time),
           )
         let own_token_input =
-          quantity_is_one(own_input.output.value, own_policy_id, token_name)
+          quantity_is_one(output.value, own_policy_id, token_name)
         own_token_input? && correct_output?
       }
 
       BurnVPNAccess { token_name } -> {
         let Transaction { inputs, mint, validity_range, extra_signatories, .. } =
           tx
-        expect Some(own_input) = find_input(inputs, output_reference)
+        expect Some(Input { output, .. }) = find_input(inputs, output_reference)
         expect Some(VPNData { owner, expiration_time, .. }) = opt_datum
         let now = get_now(validity_range)
-        let own_policy_id =
-          get_script_hash_from_address(own_input.output.address)
+        let own_policy_id = get_script_hash_from_address(output.address)
         let own_token_input =
-          quantity_is_one(own_input.output.value, own_policy_id, token_name)
+          quantity_is_one(output.value, own_policy_id, token_name)
         let is_burned = quantity_of(mint, own_policy_id, token_name) == -1
         let owner_signed =
           now > expiration_time && has(extra_signatories, owner)
