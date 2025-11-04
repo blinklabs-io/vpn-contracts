@@ -1,12 +1,11 @@
 use aiken/builtin.{
-  head_list, integer_to_bytearray, snd_pair, unconstr_fields, unconstr_index,
+  head_list, serialise_data, snd_pair, unconstr_fields, unconstr_index,
 }
 use aiken/collection/dict.{empty, insert, size, to_pairs}
 use aiken/collection/list.{any, at, filter, find}
 use aiken/crypto.{blake2b_256}
 use aiken/interval.{Finite, IntervalBound}
 use aiken/option.{is_none}
-use aiken/primitive/bytearray.{concat}
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{
   AssetName, PolicyId, Value, from_lovelace, policies, quantity_of, to_dict,
@@ -40,12 +39,7 @@ pub fn get_expiration_time_extend(
 }
 
 pub fn output_reference_to_tn(output_reference: OutputReference) -> ByteArray {
-  blake2b_256(
-    concat(
-      output_reference.transaction_id,
-      integer_to_bytearray(False, 0, output_reference.output_index),
-    ),
-  )
+  blake2b_256(serialise_data(output_reference))
 }
 
 pub fn get_ref_datum(reference_inputs: List<Input>, policy_id: PolicyId) -> Data {
