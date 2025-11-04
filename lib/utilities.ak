@@ -31,13 +31,11 @@ pub fn get_expiration_time_extend(
       unconstr_fields(get_ref_datum(reference_inputs, reference_policy_id)),
     )
   expect Some(Pricing { duration, price }) = at(pricing, selection)
-  let provider_paid = ada_paid_to(outputs, provider_addr, price)
-  if now < expiration_time && provider_paid {
+  expect ada_paid_to(outputs, provider_addr, price)
+  if now < expiration_time {
     expiration_time + duration
-  } else if provider_paid {
-    now + duration
   } else {
-    fail
+    now + duration
   }
 }
 
