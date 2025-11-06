@@ -291,7 +291,7 @@ const extend_vpn_access_succeed_tx =
 test extend_vpn_access_succeed1() {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
-    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), -1),
+    ExtendVPNAccess("", -1),
     extend_vpn_access_succeed_tx,
   )
 }
@@ -300,7 +300,7 @@ test extend_vpn_access_succeed2() {
   let tx = extend_vpn_access_succeed_tx
   vpn_spend(
     VPNData(user_pkh, "r2", 108),
-    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
+    ExtendVPNAccess("", 2),
     Transaction {
       ..tx,
       outputs: [
@@ -314,7 +314,7 @@ test extend_vpn_access_succeed2() {
 test extend_vpn_access_fail1_signature() fail {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
-    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
+    ExtendVPNAccess("", 2),
     Transaction { ..extend_vpn_access_succeed_tx, extra_signatories: [] },
   )
 }
@@ -322,7 +322,7 @@ test extend_vpn_access_fail1_signature() fail {
 test extend_vpn_access_fail2_wrong_token() fail {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
-    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("1", 1)), 2),
+    ExtendVPNAccess("", 2),
     extend_vpn_access_succeed_tx,
   )
 }
@@ -330,7 +330,7 @@ test extend_vpn_access_fail2_wrong_token() fail {
 test extend_vpn_access_fail3_selection() fail {
   vpn_spend(
     VPNData(user_pkh, "r2", 110),
-    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), 1),
+    ExtendVPNAccess("", 1),
     extend_vpn_access_succeed_tx,
   )
 }
@@ -338,7 +338,7 @@ test extend_vpn_access_fail3_selection() fail {
 test extend_vpn_access_fail4_region() fail {
   vpn_spend(
     VPNData(user_pkh, "r1", 110),
-    ExtendVPNAccess("", output_reference_to_tn(mock_utxo_ref("0", 1)), 2),
+    ExtendVPNAccess("", 2),
     extend_vpn_access_succeed_tx,
   )
 }

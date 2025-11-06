@@ -8,8 +8,8 @@ use aiken/interval.{Finite, IntervalBound}
 use aiken/option.{is_none}
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{
-  AssetName, PolicyId, Value, from_lovelace, policies, quantity_of, to_dict,
-  tokens, without_lovelace,
+  AssetName, PolicyId, Value, from_lovelace, policies, to_dict, tokens,
+  without_lovelace,
 }
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, ValidityRange,
@@ -125,14 +125,6 @@ pub fn two_token_value(value: Value, policy_id: PolicyId) -> Bool {
 
     _ -> False
   }
-}
-
-pub fn quantity_is_one(
-  value: Value,
-  policy_id: PolicyId,
-  asset_name: AssetName,
-) -> Bool {
-  quantity_of(value, policy_id, asset_name) == 1
 }
 
 /// get a token name from a value by policy id

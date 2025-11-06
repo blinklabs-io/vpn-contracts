@@ -13,7 +13,7 @@ use utilities.{
   ada_paid_to, get_asset_name, get_expiration_time_extend, get_now,
   get_ref_datum, get_script_hash_from_address, get_vkey_hash_from_address,
   has_vpn_data_output, output_reference_to_tn, policy_id_present_in_output,
-  policy_id_present_in_outputs, quantity_is_one, single_value, two_token_value,
+  policy_id_present_in_outputs, single_value, two_token_value,
 }
 
 validator vpn(
@@ -97,7 +97,7 @@ validator vpn(
         )
       }
 
-      ExtendVPNAccess { new_owner, token_name, selection } -> {
+      ExtendVPNAccess { new_owner, selection } -> {
         let Transaction {
           inputs,
           reference_inputs,
@@ -135,6 +135,7 @@ validator vpn(
           } else {
             expiration_time
           }
+        let token_name = get_asset_name(output.value, own_policy_id)
         let correct_output =
           has_vpn_data_output(
             outputs,
@@ -143,10 +144,7 @@ validator vpn(
             token_name,
             VPNData(owner_pkh, region, new_ex_time),
           )
-
-        let own_token_input =
-          quantity_is_one(output.value, own_policy_id, token_name)
-        own_token_input? && correct_output?
+        correct_output?
       }
 
       BurnVPNAccess -> {
