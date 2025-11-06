@@ -135,6 +135,15 @@ pub fn quantity_is_one(
   quantity_of(value, policy_id, asset_name) == 1
 }
 
+/// get a token name from a value by policy id
+/// use with caution if policy id could have multiple token names
+pub fn get_asset_name(value: Value, policy_id: PolicyId) -> AssetName {
+  tokens(value, policy_id)
+    |> to_pairs
+    |> head_list
+    |> fst_pair
+}
+
 // get the payment script hash of an address
 pub fn get_script_hash_from_address(address: Address) -> ByteArray {
   expect Script(script_hash) = address.payment_credential

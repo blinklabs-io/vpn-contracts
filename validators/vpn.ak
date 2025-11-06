@@ -10,9 +10,9 @@ use types.{
   VPNAction, VPNData, VPNDatum, VPNReferenceData,
 }
 use utilities.{
-  ada_paid_to, get_expiration_time_extend, get_now, get_ref_datum,
-  get_script_hash_from_address, get_vkey_hash_from_address, has_vpn_data_output,
-  output_reference_to_tn, policy_id_present_in_output,
+  ada_paid_to, get_asset_name, get_expiration_time_extend, get_now,
+  get_ref_datum, get_script_hash_from_address, get_vkey_hash_from_address,
+  has_vpn_data_output, output_reference_to_tn, policy_id_present_in_output,
   policy_id_present_in_outputs, quantity_is_one, single_value, two_token_value,
 }
 
@@ -54,7 +54,7 @@ validator vpn(
         is_single_mint? && correct_region? && provider_paid? && owner_signed? && input_consumed? && correct_output?
       }
 
-      BurnVPNAccess { .. } -> {
+      BurnVPNAccess -> {
         let tokens_are_burn =
           !policy_id_present_in_outputs(tx.outputs, policy_id)
         tokens_are_burn?
@@ -135,7 +135,6 @@ validator vpn(
           } else {
             expiration_time
           }
-
         let correct_output =
           has_vpn_data_output(
             outputs,
@@ -144,20 +143,20 @@ validator vpn(
             token_name,
             VPNData(owner_pkh, region, new_ex_time),
           )
+
         let own_token_input =
           quantity_is_one(output.value, own_policy_id, token_name)
         own_token_input? && correct_output?
       }
 
-      BurnVPNAccess { token_name } -> {
+      BurnVPNAccess -> {
         let Transaction { inputs, mint, validity_range, extra_signatories, .. } =
           tx
         expect Some(Input { output, .. }) = find_input(inputs, output_reference)
         expect Some(VPNData { owner, expiration_time, .. }) = opt_datum
         let now = get_now(validity_range)
         let own_policy_id = get_script_hash_from_address(output.address)
-        let own_token_input =
-          quantity_is_one(output.value, own_policy_id, token_name)
+        let token_name = get_asset_name(output.value, own_policy_id)
         let is_burned = quantity_of(mint, own_policy_id, token_name) == -1
         let owner_signed =
           now > expiration_time && has(extra_signatories, owner)
@@ -166,7 +165,7 @@ validator vpn(
             extra_signatories,
             get_vkey_hash_from_address(provider_address),
           )
-        own_token_input? && is_burned? && ( owner_signed? || provider_signed? )
+        is_burned? && ( owner_signed? || provider_signed? )
       }
 
       _ -> fail @"wrong spending redeemer"

@@ -29,5 +29,5 @@ pub type VPNAction {
     token_name: AssetName,
     selection: Int,
   }
-  BurnVPNAccess { token_name: AssetName }
+  BurnVPNAccess
 }
