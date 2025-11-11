@@ -5,7 +5,7 @@ USER=$1
 source env.sh
 FILE_NAME="vpn-access"
 
-selection=0
+selection=1
 price=5000000
 duration=259200000
 region=757320656173742d31
@@ -18,7 +18,7 @@ UTXO_VPN_REF_DATA=$(get_UTxO_by_token $VPN_ADDR $(cardano-cli hash script --scri
 echo "UTXO_VPN_REF_DATA: $UTXO_VPN_REF_DATA"
 VPN_CS=$(cardano-cli hash script --script-file $VALIDATOR_PATH/vpn.plutus)
 echo "VPN_CS: $VPN_CS"
-TN=$(blake2b_hash $UTXO_IN_ADA)
+TN=$(blake2b_256_txoutref $UTXO_IN_ADA)
 echo "TN: $TN"
 USER_PKH=$(cardano-cli address key-hash --payment-verification-key-file $WALLET_PATH/$USER.vkey)
 cur_time=$(date -u --date="now - 400 seconds" +"%Y-%m-%dT%H:%M:%SZ")

@@ -24,7 +24,7 @@ cardano-cli conway transaction build \
     --change-address $USER_ADDR \
     --tx-out $VPN_ADDR+2000000+"1 $NFT_CS.70726f7669646572" \
     --tx-out-inline-datum-file $DATUMS_PATH/vpn_reference_data.json \
-    --tx-out $USER_ADDR+16347830 \
+    --tx-out $USER_ADDR+15865110 \
     --tx-out-reference-script-file $VPN_FILE \
     --out-file $TX_PATH/$FILE_NAME.raw
 
@@ -33,5 +33,5 @@ cardano-cli conway transaction sign \
     --tx-body-file $TX_PATH/$FILE_NAME.raw \
     --out-file $TX_PATH/$FILE_NAME.sign \
     --signing-key-file $WALLET_PATH/$USER.skey
-
+#exit
 cardano-cli conway transaction submit ${TESTNET_MAGIC} --tx-file $TX_PATH/$FILE_NAME.sign
