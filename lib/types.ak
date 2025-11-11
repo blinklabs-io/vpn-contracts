@@ -1,5 +1,4 @@
 use aiken/crypto.{VerificationKeyHash}
-use cardano/assets.{AssetName}
 use cardano/transaction.{OutputReference}
 
 pub type Pricing {
@@ -24,10 +23,6 @@ pub type VPNAction {
     tx_ref: OutputReference,
   }
   UpdateReferenceData { pricing: List<Pricing>, regions: List<ByteArray> }
-  ExtendVPNAccess {
-    new_owner: VerificationKeyHash,
-    token_name: AssetName,
-    selection: Int,
-  }
-  BurnVPNAccess { token_name: AssetName }
+  ExtendVPNAccess { new_owner: VerificationKeyHash, selection: Int }
+  BurnVPNAccess
 }

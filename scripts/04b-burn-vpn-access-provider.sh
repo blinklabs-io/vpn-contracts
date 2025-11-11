@@ -20,7 +20,7 @@ USER_PKH=$(cardano-cli address key-hash --payment-verification-key-file $WALLET_
 cur_slot=$(cardano-cli query tip  $TESTNET_MAGIC | jq '.slot')
 echo "cur_slot: $cur_slot"
 REDEEMER_PATH=$REDEEMERS_PATH/"$USER"_burn-provider.json
-redeemer=$(generate_vpn_burn_redeemer_json $TN)
+redeemer=$(generate_vpn_burn_redeemer_json)
 echo "redeemer: $redeemer"
 echo $redeemer > $REDEEMER_PATH
 

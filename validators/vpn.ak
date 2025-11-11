@@ -1,7 +1,6 @@
 use aiken/collection/list.{any, at, has}
-use aiken/crypto.{VerificationKeyHash}
 use aiken/option.{is_none}
-use cardano/address.{Address, Script, StakeCredential, VerificationKey}
+use cardano/address.{Address, Script}
 use cardano/assets.{PolicyId, policies, quantity_of}
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, find_input,
@@ -11,17 +10,16 @@ use types.{
   VPNAction, VPNData, VPNDatum, VPNReferenceData,
 }
 use utilities.{
-  ada_paid_to, get_expiration_time_extend, get_now, get_ref_datum,
-  get_script_hash_from_address, has_vpn_data_output, only_2_tokens,
-  output_reference_to_tn, policy_id_present_in_output,
-  policy_id_present_in_outputs, quantity_is_one, single_mint,
+  ada_paid_to, get_asset_name, get_expiration_time_extend, get_now,
+  get_ref_datum, get_script_hash_from_address, get_vkey_hash_from_address,
+  has_vpn_data_output, output_reference_to_tn, policy_id_present_in_output,
+  policy_id_present_in_outputs, single_value, two_token_value,
 }
 
 validator vpn(
   wait_time: Int,
   reference_policy_id: PolicyId,
-  provider_pkh: VerificationKeyHash,
-  provider_stake_pkh: StakeCredential,
+  provider_address: Address,
 ) {
   mint(redeemer: VPNAction, policy_id: PolicyId, tx: Transaction) {
     when redeemer is {
@@ -39,21 +37,16 @@ validator vpn(
           get_ref_datum(reference_inputs, reference_policy_id)
         expect Some(Pricing { duration, price }) = at(pricing, selection)
         let token_name = output_reference_to_tn(tx_ref)
-        let is_single_mint = single_mint(mint, policy_id, token_name, 1)?
+        let is_single_mint = single_value(mint, policy_id, token_name, 1)?
         let correct_region = has(regions, region)?
-        let provider_paid =
-          ada_paid_to(
-            outputs,
-            Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
-            price,
-          )?
+        let provider_paid = ada_paid_to(outputs, provider_address, price)?
         let owner_signed = has(extra_signatories, owner)?
         let input_consumed =
           any(inputs, fn(input) { input.output_reference == tx_ref })?
         let correct_output =
           has_vpn_data_output(
             outputs,
-            Address(Script(policy_id), Some(provider_stake_pkh)),
+            Address(Script(policy_id), provider_address.stake_credential),
             policy_id,
             token_name,
             VPNData(owner, region, get_now(validity_range) + duration),
@@ -61,7 +54,7 @@ validator vpn(
         is_single_mint? && correct_region? && provider_paid? && owner_signed? && input_consumed? && correct_output?
       }
 
-      BurnVPNAccess { .. } -> {
+      BurnVPNAccess -> {
         let tokens_are_burn =
           !policy_id_present_in_outputs(tx.outputs, policy_id)
         tokens_are_burn?
@@ -79,21 +72,24 @@ validator vpn(
     when redeemer is {
       UpdateReferenceData { pricing, regions } -> {
         let Transaction { inputs, outputs, extra_signatories, .. } = tx
-        expect Some(own_input) = find_input(inputs, output_reference)
-        let provider_signed = has(extra_signatories, provider_pkh)
+        expect Some(Input { output, .. }) = find_input(inputs, output_reference)
+        let provider_signed =
+          has(extra_signatories, get_vkey_hash_from_address(provider_address))
         let ref_policy_present_input =
-          policy_id_present_in_output(own_input.output, reference_policy_id)
+          policy_id_present_in_output(output, reference_policy_id)
+
         let ref_policy_output_valid =
           any(
             outputs,
-            fn(output) {
-              own_input.output.address == output.address && output.datum == InlineDatum(
+            fn(some_output) {
+              output.address == some_output.address && some_output.datum == InlineDatum(
                 VPNReferenceData(pricing, regions),
-              ) && policy_id_present_in_output(output, reference_policy_id) && only_2_tokens(
-                output.value,
-              ) && is_none(output.reference_script)
+              ) && two_token_value(some_output.value, reference_policy_id) && is_none(
+                some_output.reference_script,
+              )
             },
           )
+
         let ref_policy_burned = policies(tx.mint) == [reference_policy_id]
 
         provider_signed? && ref_policy_present_input? && (
@@ -101,7 +97,7 @@ validator vpn(
         )
       }
 
-      ExtendVPNAccess { new_owner, token_name, selection } -> {
+      ExtendVPNAccess { new_owner, selection } -> {
         let Transaction {
           inputs,
           reference_inputs,
@@ -110,11 +106,10 @@ validator vpn(
           extra_signatories,
           ..
         } = tx
-        expect Some(own_input) = find_input(inputs, output_reference)
+        expect Some(Input { output, .. }) = find_input(inputs, output_reference)
 
         expect Some(VPNData { owner, region, expiration_time }) = opt_datum
-        let own_policy_id =
-          get_script_hash_from_address(own_input.output.address)
+        let own_policy_id = get_script_hash_from_address(output.address)
         let owner_pkh =
           if !(new_owner == "") {
             if has(extra_signatories, owner) {
@@ -133,46 +128,42 @@ validator vpn(
               reference_inputs,
               reference_policy_id,
               outputs,
-              Address(VerificationKey(provider_pkh), Some(provider_stake_pkh)),
+              provider_address,
               get_now(validity_range),
               expiration_time,
             )
           } else {
             expiration_time
           }
-
+        let token_name = get_asset_name(output.value, own_policy_id)
         let correct_output =
           has_vpn_data_output(
             outputs,
-            own_input.output.address,
+            output.address,
             own_policy_id,
             token_name,
             VPNData(owner_pkh, region, new_ex_time),
           )
-        let own_token_input =
-          quantity_is_one(own_input.output.value, own_policy_id, token_name)
-        own_token_input? && correct_output?
+        correct_output?
       }
 
-      BurnVPNAccess { token_name } -> {
+      BurnVPNAccess -> {
         let Transaction { inputs, mint, validity_range, extra_signatories, .. } =
           tx
-        expect Some(own_input) = find_input(inputs, output_reference)
+        expect Some(Input { output, .. }) = find_input(inputs, output_reference)
         expect Some(VPNData { owner, expiration_time, .. }) = opt_datum
         let now = get_now(validity_range)
-        let own_policy_id =
-          get_script_hash_from_address(own_input.output.address)
-        let own_token_input =
-          quantity_is_one(own_input.output.value, own_policy_id, token_name)
+        let own_policy_id = get_script_hash_from_address(output.address)
+        let token_name = get_asset_name(output.value, own_policy_id)
         let is_burned = quantity_of(mint, own_policy_id, token_name) == -1
         let owner_signed =
           now > expiration_time && has(extra_signatories, owner)
         let provider_signed =
           now > expiration_time + wait_time && has(
             extra_signatories,
-            provider_pkh,
+            get_vkey_hash_from_address(provider_address),
           )
-        own_token_input? && is_burned? && ( owner_signed? || provider_signed? )
+        is_burned? && ( owner_signed? || provider_signed? )
       }
 
       _ -> fail @"wrong spending redeemer"

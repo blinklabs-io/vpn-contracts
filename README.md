@@ -28,18 +28,18 @@
 ## Preprod
 Data can be found in `preprod/`.
 
-- reference nft policy id: `f043e77d22674a36edfbda3200a6ba9eb966c045ed72eb427cf45c92`
-- vpn access token policy id: `da9d3ac097f9ae0c0bd933d4e04848fe5bde15bbbdc86cb0fb10222b`
-- vpn validator address: `addr_test1zrdf6wkqjlu6urqtmyeafczgfrl9hhs4hw7usm9slvgzy26jduk3c6ecrpkrk8qqlr4ep37cx03ytlcn70n93zyemj6svnkmku`
-- vpn reference script tx hash: `363fb149456226998f537df63cdfbab015ae4a10cb45bf427b89ffbc53f484c3#1`
+- reference nft policy id: `446dd7d5f53db5232b3d925ab5e883c90a685099d75ae69854fa62a1`
+- vpn access token policy id: `aa5d7253d7c94e0d0e4f46959a0a4be905620abcad9cb7d1e9c12c32`
+- vpn validator address: `addr_test1zz496ujn6ly5urgwfarftxs2f05s2cs2hjkeed73a8qjcvjjduk3c6ecrpkrk8qqlr4ep37cx03ytlcn70n93zyemj6suh7mks`
+- vpn reference script tx hash: `ea7e4f0147eeba9a17c519e1652ed933262d30fe462bf418ece18dc27a2c13ba#1`
 
 ## Mainnet
 Data can be found in `mainnet/`
 
-- reference nft policy id: `1497d1a199633ac5908aa872c9771f9f736f0dc08337b071df2508b7`
-- vpn access token policy id: `926344085bfd2e62f3e74d50beff2e48274e1193ed719662d783db0b`
-- vpn validator address: `addr1zxfxx3qgt07juchnuax4p0hl9eyzwns3j0khr9nz67pakz7gx8yp9m2ssx9v9vv60a3xudznxtw68vr8l0rpw26u2gfq8cpcxm`
-- vpn reference script tx hash: `df1b318e4c45a162ef6b4ba00774018b54d4c873d5414b6d35b4858ec866512a#1`
+- reference nft policy id: `949dfe5cf4691b821a09e4017f1894a5dfbf12c02271cbcaa6136c8d`
+- vpn access token policy id: `9b0a098ebc40e81ee6493806079ad0139222e42b6067631bbd851602`
+- vpn validator address: `addr1zxds5zvwh3qws8hxfyuqvpu66qfeyghy9dsxwccmhkz3vqkgx8yp9m2ssx9v9vv60a3xudznxtw68vr8l0rpw26u2gfqhx5tkz`
+- vpn reference script tx hash: `ef40fa428ae3485fa089896f577139f3212bff7f7908329d677d387c240103f2#1`
 
 ## Datums
 

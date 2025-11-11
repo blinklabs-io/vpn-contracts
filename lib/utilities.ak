@@ -1,16 +1,15 @@
 use aiken/builtin.{
-  head_list, integer_to_bytearray, snd_pair, unconstr_fields, unconstr_index,
+  fst_pair, head_list, serialise_data, unconstr_fields, unconstr_index,
 }
-use aiken/collection/dict.{empty, insert, size, to_pairs}
-use aiken/collection/list.{any, at, find}
+use aiken/collection/dict.{empty, insert, to_pairs}
+use aiken/collection/list.{any, at, filter, find}
 use aiken/crypto.{blake2b_256}
 use aiken/interval.{Finite, IntervalBound}
 use aiken/option.{is_none}
-use aiken/primitive/bytearray.{concat}
-use cardano/address.{Address, Script}
+use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{
-  AssetName, PolicyId, Value, from_lovelace, policies, quantity_of, to_dict,
-  tokens, without_lovelace,
+  AssetName, PolicyId, Value, from_lovelace, policies, to_dict, tokens,
+  without_lovelace,
 }
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, ValidityRange,
@@ -31,23 +30,16 @@ pub fn get_expiration_time_extend(
       unconstr_fields(get_ref_datum(reference_inputs, reference_policy_id)),
     )
   expect Some(Pricing { duration, price }) = at(pricing, selection)
-  let provider_paid = ada_paid_to(outputs, provider_addr, price)
-  if now < expiration_time && provider_paid {
+  expect ada_paid_to(outputs, provider_addr, price)
+  if now < expiration_time {
     expiration_time + duration
-  } else if provider_paid {
-    now + duration
   } else {
-    fail
+    now + duration
   }
 }
 
 pub fn output_reference_to_tn(output_reference: OutputReference) -> ByteArray {
-  blake2b_256(
-    concat(
-      output_reference.transaction_id,
-      integer_to_bytearray(False, 0, output_reference.output_index),
-    ),
-  )
+  blake2b_256(serialise_data(output_reference))
 }
 
 pub fn get_ref_datum(reference_inputs: List<Input>, policy_id: PolicyId) -> Data {
@@ -86,21 +78,22 @@ pub fn has_vpn_data_output(
   token_name: AssetName,
   vpn_data: VPNDatum,
 ) {
-  any(
-    outputs,
-    fn(output) {
-      (output.address == out_addr)? && quantity_is_one(
-        output.value,
-        policy_id,
-        token_name,
-      )? && (output.datum == InlineDatum(vpn_data))? && only_2_tokens(
-        output.value,
-      )?
-    },
+  expect [vpn_output] =
+    filter(
+      outputs,
+      fn(output) { policy_id_present_in_output(output, policy_id) },
+    )
+  (vpn_output.address == out_addr)? && (vpn_output.datum == InlineDatum(
+    vpn_data,
+  ))? && single_value(
+    without_lovelace(vpn_output.value),
+    policy_id,
+    token_name,
+    1,
   )
 }
 
-pub fn single_mint(value: Value, cs: PolicyId, tn: AssetName, am: Int) -> Bool {
+pub fn single_value(value: Value, cs: PolicyId, tn: AssetName, am: Int) -> Bool {
   insert(empty, tn, am) == tokens(value, cs)
 }
 
@@ -121,33 +114,36 @@ pub fn policy_id_present_in_outputs(
 
 /// check there are exactly 2 assets in an value
 /// used if exactly ada and a token should be in a value
-pub fn only_2_tokens(value: Value) -> Bool {
+pub fn two_token_value(value: Value, policy_id: PolicyId) -> Bool {
   when
     value
       |> without_lovelace
       |> to_dict
       |> to_pairs
   is {
-    [tnams] ->
-      (
-        tnams
-          |> snd_pair
-          |> size
-      ) == 1
+    [tnams] -> fst_pair(tnams) == policy_id
+
     _ -> False
   }
 }
 
-pub fn quantity_is_one(
-  value: Value,
-  policy_id: PolicyId,
-  asset_name: AssetName,
-) -> Bool {
-  quantity_of(value, policy_id, asset_name) == 1
+/// get a token name from a value by policy id
+/// use with caution if policy id could have multiple token names
+pub fn get_asset_name(value: Value, policy_id: PolicyId) -> AssetName {
+  tokens(value, policy_id)
+    |> to_pairs
+    |> head_list
+    |> fst_pair
 }
 
 // get the payment script hash of an address
 pub fn get_script_hash_from_address(address: Address) -> ByteArray {
   expect Script(script_hash) = address.payment_credential
   script_hash
+}
+
+// get the payment pub key hash of an address
+pub fn get_vkey_hash_from_address(address: Address) -> ByteArray {
+  expect VerificationKey(vkey_hash) = address.payment_credential
+  vkey_hash
 }

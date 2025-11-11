@@ -1,9 +1,10 @@
 export REPO_HOME="$HOME/blinklabs/vpn-contracts" #path to this repository
-export NETWORK_DIR_PATH="$REPO_HOME/mainnet" # path to network in use (preprod/private)
+#export NETWORK_DIR_PATH="$REPO_HOME/preprod" # path to network in use (preprod)
 #export TESTNET_MAGIC=$(echo "--testnet-magic 1")
+#export VPN_TX_REF="ea7e4f0147eeba9a17c519e1652ed933262d30fe462bf418ece18dc27a2c13ba#1" # preprod
+export NETWORK_DIR_PATH="$REPO_HOME/mainnet" # path to network in use (mainnet)
 export TESTNET_MAGIC=$(echo "--mainnet")
-
-export VPN_TX_REF="df1b318e4c45a162ef6b4ba00774018b54d4c873d5414b6d35b4858ec866512a#1" # mainnet
+export VPN_TX_REF="ea7e4f0147eeba9a17c519e1652ed933262d30fe462bf418ece18dc27a2c13ba#1" # mainnet
 export TX_PATH="$NETWORK_DIR_PATH/tx"
 
 export WALLET_PATH="$NETWORK_DIR_PATH/wallets"
@@ -16,43 +17,46 @@ export REDEEMERS_PATH="$NETWORK_DIR_PATH/redeemers"
 
 #!/bin/bash
 
-blake2b_hash() {
-    local input="$1"
-    #local hex_part="$(to_upper ${input%#*})"
-    local hex_part="${input%#*}"
-    local index_part="${input#*#}"
+blake2b_256_txoutref() {
+    local tx_ref="$1"
+    local tx_hash="${tx_ref%#*}"
+    local tx_idx="${tx_ref#*#}"
     
-    # Strip any whitespace and 0x prefixes
-    hex_part=$(echo "$hex_part" | tr -d ' \t\n\r' | sed 's/^0[Xx]//')
-    
-    local le_index=""
-    
-    # Extract bytes one by one (little-endian order)
-    while (( index_part > 0 )); do
-        byte=$(( index_part & 0xFF ))
-        le_index+=$(printf "%02x" "$byte")
-        index_part=$(( index_part >> 8 ))
-    done
-
-    # Combine
-    local combined="${hex_part}${le_index}"
-    
-    # Validate hex string
-    if [[ ! "$combined" =~ ^[0-9A-Fa-f]+$ ]]; then
-        echo "ERROR: Invalid hex string: $combined" >&2
-        return 1
-    fi
-    
-    # Hash with Blake2b using Python
-    python3 -c "
+    python3 << EOF
+import struct
 import hashlib
-import binascii
-data = binascii.unhexlify('$combined')
-hash_obj = hashlib.blake2b(data, digest_size=32)
-print(hash_obj.hexdigest().upper())
-"
-}
 
+tx_hash = "$tx_hash"
+tx_idx = int("$tx_idx")
+
+tx_hash_bytes = bytes.fromhex(tx_hash)
+
+# Manually construct CBOR with indefinite array (serialise_data)
+output = bytearray()
+output.append(0xd8)  # Tag 121
+output.append(0x79)
+output.append(0x9f)  # Indefinite array start
+output.append(0x58)  # Byte string
+output.append(len(tx_hash_bytes))
+output.extend(tx_hash_bytes)
+
+# Integer index
+if tx_idx <= 23:
+    output.append(tx_idx)
+elif tx_idx <= 255:
+    output.append(0x18)
+    output.append(tx_idx)
+else:
+    output.append(0x19)
+    output.extend(struct.pack('>H', tx_idx))
+
+output.append(0xff)  # Indefinite array end
+
+# blake2b_256
+hash_result = hashlib.blake2b(bytes(output), digest_size=32).digest()
+print(hash_result.hex())
+EOF
+}
 
 generate_vpn_data_json() {
   local str1="$1"
@@ -110,26 +114,21 @@ generate_vpn_access_redeemer_json() {
 
 generate_vpn_extend_redeemer_json() {
   local pkh="$1"
-  local tn="$2"
-  local selection="$3"
+  local selection="$2"
 
-  jq -n --arg b1 "$pkh" --arg b2 "$tn" --argjson i1 "$selection" '{
+  jq -n --arg b1 "$pkh" --argjson i1 "$selection" '{
     constructor: 2,
     fields: [
       {bytes: $b1},
-      {bytes: $b2},
       {int: $i1}
     ]
   }'
 }
 
 generate_vpn_burn_redeemer_json() {
-  local tn="$1"
-
-  jq -n --arg b1 "$tn" '{
+  jq -n '{
     constructor: 3,
     fields: [
-      {bytes: $b1}
     ]
   }'
 }
