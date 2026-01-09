@@ -6,14 +6,25 @@ use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, Transaction, find_input,
 }
 use types.{
-  BurnVPNAccess, ExtendVPNAccess, MintVPNAccess, Pricing, UpdateReferenceData,
-  VPNAction, VPNData, VPNDatum, VPNReferenceData,
+  BurnVPNAccess, ExtendVPNAccess, ExtendVPNAccessWithProof, MintVPNAccess,
+  MintVPNAccessWithProof, Pricing, UpdateReferenceData, VPNAction, VPNData,
+  VPNDatum, VPNMidnightConfig, VPNReferenceData,
 }
 use utilities.{
-  ada_paid_to, get_asset_name, get_expiration_time_extend, get_now,
-  get_ref_datum, get_script_hash_from_address, get_vkey_hash_from_address,
-  has_vpn_data_output, output_reference_to_tn, policy_id_present_in_output,
+  ada_paid_to, derive_nullifier_policy, get_asset_name,
+  get_expiration_time_extend, get_expiration_time_extend_midnight,
+  get_midnight_config, get_now, get_ref_datum, get_script_hash_from_address,
+  get_vkey_hash_from_address, has_vpn_data_output, nullifier_exists,
+  output_reference_to_tn, policy_id_present_in_output,
   policy_id_present_in_outputs, single_value, two_token_value,
+  verify_midnight_payment,
+}
+
+/// Derive Midnight config policy from reference policy (for backward compatibility)
+fn get_midnight_config_policy(reference_policy_id: PolicyId) -> PolicyId {
+  derive_nullifier_policy(reference_policy_id)
+  // Reusing derive_nullifier_policy logic: blake2b_256(policy + "nullifier")
+  // For Midnight config, we could use a different suffix, but this works
 }
 
 validator vpn(
@@ -52,6 +63,79 @@ validator vpn(
             VPNData(owner, region, get_now(validity_range) + duration),
           )?
         is_single_mint? && correct_region? && provider_paid? && owner_signed? && input_consumed? && correct_output?
+      }
+
+      // Midnight ZK proof-based minting (no direct ADA payment)
+      MintVPNAccessWithProof {
+        owner,
+        region,
+        selection,
+        tx_ref,
+        zk_proof,
+        nullifier,
+        midnight_state_root,
+      } -> {
+        let Transaction {
+          inputs,
+          reference_inputs,
+          outputs,
+          mint,
+          validity_range,
+          extra_signatories,
+          ..
+        } = tx
+
+        // Get pricing from standard reference datum
+        expect VPNReferenceData { pricing, regions } =
+          get_ref_datum(reference_inputs, reference_policy_id)
+        expect Some(Pricing { duration, .. }) = at(pricing, selection)
+
+        // Get Midnight configuration
+        let midnight_config_policy = get_midnight_config_policy(reference_policy_id)
+        let VPNMidnightConfig { verifier_hash, midnight_enabled } =
+          get_midnight_config(reference_inputs, midnight_config_policy)
+
+        // Midnight must be enabled
+        expect midnight_enabled
+
+        // Verify ZK proof (replaces ada_paid_to check)
+        let proof_valid =
+          verify_midnight_payment(
+            verifier_hash,
+            zk_proof,
+            selection,
+            region,
+            midnight_state_root,
+          )?
+
+        // Derive and check nullifier policy
+        let nullifier_policy_id = derive_nullifier_policy(policy_id)
+
+        // Check nullifier not already used (prevent replay)
+        let nullifier_fresh =
+          !nullifier_exists(reference_inputs, nullifier_policy_id, nullifier)?
+
+        // Nullifier must be minted in this transaction
+        let nullifier_minted =
+          quantity_of(mint, nullifier_policy_id, nullifier) == 1
+
+        // Standard token minting checks
+        let token_name = output_reference_to_tn(tx_ref)
+        let is_single_mint = single_value(mint, policy_id, token_name, 1)?
+        let correct_region = has(regions, region)?
+        let owner_signed = has(extra_signatories, owner)?
+        let input_consumed =
+          any(inputs, fn(input) { input.output_reference == tx_ref })?
+        let correct_output =
+          has_vpn_data_output(
+            outputs,
+            Address(Script(policy_id), provider_address.stake_credential),
+            policy_id,
+            token_name,
+            VPNData(owner, region, get_now(validity_range) + duration),
+          )?
+
+        proof_valid? && nullifier_fresh? && nullifier_minted? && is_single_mint? && correct_region? && owner_signed? && input_consumed? && correct_output?
       }
 
       BurnVPNAccess -> {
@@ -145,6 +229,94 @@ validator vpn(
             VPNData(owner_pkh, region, new_ex_time),
           )
         correct_output?
+      }
+
+      // Midnight ZK proof-based extension (no direct ADA payment)
+      ExtendVPNAccessWithProof {
+        new_owner,
+        selection,
+        zk_proof,
+        nullifier,
+        midnight_state_root,
+      } -> {
+        let Transaction {
+          inputs,
+          reference_inputs,
+          outputs,
+          mint,
+          validity_range,
+          extra_signatories,
+          ..
+        } = tx
+        expect Some(Input { output, .. }) = find_input(inputs, output_reference)
+
+        expect Some(VPNData { owner, region, expiration_time }) = opt_datum
+        let own_policy_id = get_script_hash_from_address(output.address)
+
+        // Get Midnight configuration
+        let midnight_config_policy = get_midnight_config_policy(reference_policy_id)
+        let VPNMidnightConfig { verifier_hash, midnight_enabled } =
+          get_midnight_config(reference_inputs, midnight_config_policy)
+
+        // Midnight must be enabled
+        expect midnight_enabled
+
+        // Verify ZK proof (replaces ada_paid_to check)
+        let proof_valid =
+          verify_midnight_payment(
+            verifier_hash,
+            zk_proof,
+            selection,
+            region,
+            midnight_state_root,
+          )?
+
+        // Check nullifier not already used (prevent replay)
+        let nullifier_policy_id = derive_nullifier_policy(own_policy_id)
+        let nullifier_fresh =
+          !nullifier_exists(reference_inputs, nullifier_policy_id, nullifier)?
+
+        // Nullifier must be minted in this transaction
+        let nullifier_minted =
+          quantity_of(mint, nullifier_policy_id, nullifier) == 1
+
+        // Handle owner transfer (same logic as ExtendVPNAccess)
+        let owner_pkh =
+          if !(new_owner == "") {
+            if has(extra_signatories, owner) {
+              new_owner
+            } else {
+              fail
+            }
+          } else {
+            owner
+          }
+
+        // Calculate new expiration time using Midnight-specific function
+        let new_ex_time =
+          if selection > -1 {
+            get_expiration_time_extend_midnight(
+              selection,
+              reference_inputs,
+              reference_policy_id,
+              get_now(validity_range),
+              expiration_time,
+            )
+          } else {
+            expiration_time
+          }
+
+        let token_name = get_asset_name(output.value, own_policy_id)
+        let correct_output =
+          has_vpn_data_output(
+            outputs,
+            output.address,
+            own_policy_id,
+            token_name,
+            VPNData(owner_pkh, region, new_ex_time),
+          )
+
+        proof_valid? && nullifier_fresh? && nullifier_minted? && correct_output?
       }
 
       BurnVPNAccess -> {

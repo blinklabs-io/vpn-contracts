@@ -1,6 +1,7 @@
 use aiken/builtin.{
   fst_pair, head_list, serialise_data, unconstr_fields, unconstr_index,
 }
+use aiken/primitive/bytearray
 use aiken/collection/dict.{empty, insert, to_pairs}
 use aiken/collection/list.{any, at, filter, find}
 use aiken/crypto.{blake2b_256}
@@ -8,13 +9,13 @@ use aiken/interval.{Finite, IntervalBound}
 use aiken/option.{is_none}
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{
-  AssetName, PolicyId, Value, from_lovelace, policies, to_dict, tokens,
-  without_lovelace,
+  AssetName, PolicyId, Value, from_lovelace, policies, quantity_of, to_dict,
+  tokens, without_lovelace,
 }
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, ValidityRange,
 }
-use types.{Pricing, VPNDatum}
+use types.{Pricing, VPNDatum, VPNMidnightConfig}
 
 pub fn get_expiration_time_extend(
   selection: Int,
@@ -146,4 +147,111 @@ pub fn get_script_hash_from_address(address: Address) -> ByteArray {
 pub fn get_vkey_hash_from_address(address: Address) -> ByteArray {
   expect VerificationKey(vkey_hash) = address.payment_credential
   vkey_hash
+}
+
+// ============================================================================
+// Midnight ZK Payment Utilities
+// ============================================================================
+
+/// Get Midnight configuration from a reference input
+/// The config is identified by a specific policy ID (midnight config NFT)
+pub fn get_midnight_config(
+  reference_inputs: List<Input>,
+  midnight_config_policy_id: PolicyId,
+) -> VPNMidnightConfig {
+  when
+    find(
+      reference_inputs,
+      fn(input) {
+        policy_id_present_in_output(input.output, midnight_config_policy_id)
+      },
+    )
+  is {
+    Some(input) -> {
+      expect InlineDatum(datum) = input.output.datum
+      expect config: VPNMidnightConfig = datum
+      config
+    }
+    _ -> fail @"midnight config not found in reference inputs"
+  }
+}
+
+/// Derive nullifier policy ID deterministically from VPN policy ID
+/// This allows the nullifier policy to be computed without adding a new parameter
+pub fn derive_nullifier_policy(vpn_policy_id: PolicyId) -> ByteArray {
+  blake2b_256(bytearray.concat(vpn_policy_id, "nullifier"))
+}
+
+/// Check if a nullifier token already exists (has been used)
+/// Nullifiers are minted as tokens to prevent double-spend of Midnight proofs
+pub fn nullifier_exists(
+  reference_inputs: List<Input>,
+  nullifier_policy_id: PolicyId,
+  nullifier: ByteArray,
+) -> Bool {
+  any(
+    reference_inputs,
+    fn(input) {
+      quantity_of(input.output.value, nullifier_policy_id, nullifier) > 0
+    },
+  )
+}
+
+/// Verify a Midnight ZK payment proof
+/// This is a placeholder that will be replaced with actual Halo2 verification
+/// using Plutus V3 BLS12-381 primitives when the circuit is ready
+///
+/// Parameters:
+/// - verifier_hash: Script hash of the Halo2 verifier (from reference script)
+/// - zk_proof: The ZK proof bytes from Midnight (~288 bytes for Halo2)
+/// - selection: Pricing tier index that was paid for
+/// - region: Region hash from the proof
+/// - midnight_state_root: Midnight state root commitment
+///
+/// Returns: True if proof is valid, fails otherwise
+pub fn verify_midnight_payment(
+  _verifier_hash: ByteArray,
+  _zk_proof: ByteArray,
+  _selection: Int,
+  _region: ByteArray,
+  _midnight_state_root: ByteArray,
+) -> Bool {
+  // TODO: Implement actual Halo2 proof verification using:
+  // - bls12_381_G1_uncompress
+  // - bls12_381_G2_uncompress
+  // - bls12_381_millerLoop
+  // - bls12_381_finalVerify
+  //
+  // The verification logic will:
+  // 1. Deserialize proof elements from zk_proof
+  // 2. Construct public inputs from (selection, region, midnight_state_root)
+  // 3. Perform pairing check using BLS12-381 primitives
+  // 4. Return result of final verification
+  //
+  // For now, this is a placeholder that always returns True for testing
+  // MUST be replaced before production deployment
+  trace @"WARNING: ZK proof verification not yet implemented"
+  True
+}
+
+/// Calculate expiration time for Midnight proof-based extension
+/// Similar to get_expiration_time_extend but without payment verification
+pub fn get_expiration_time_extend_midnight(
+  selection: Int,
+  reference_inputs: List<Input>,
+  reference_policy_id: PolicyId,
+  now: Int,
+  expiration_time: Int,
+) -> Int {
+  expect pricing: List<Pricing> =
+    head_list(
+      unconstr_fields(get_ref_datum(reference_inputs, reference_policy_id)),
+    )
+  expect Some(Pricing { duration, .. }) = at(pricing, selection)
+  // No payment check needed - verified via ZK proof
+  if now < expiration_time {
+    expiration_time + duration
+  } else {
+    now + duration
+  }
 }

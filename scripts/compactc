@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# Wrapper script for Compact compiler (Midnight smart contract language)
+# Uses Docker with QEMU emulation for ARM64 Linux
+#
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+docker run --rm --platform linux/amd64 \
+    --entrypoint compactc \
+    -v "$PROJECT_ROOT:/workspace" \
+    -w /workspace \
+    midnightnetwork/compactc \
+    "$@"

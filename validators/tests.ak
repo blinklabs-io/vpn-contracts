@@ -8,10 +8,11 @@ use cardano/transaction.{
 }
 use nft
 use types.{
-  BurnVPNAccess, ExtendVPNAccess, MintVPNAccess, Pricing, UpdateReferenceData,
-  VPNAction, VPNData, VPNDatum, VPNReferenceData,
+  BurnVPNAccess, ExtendVPNAccess, ExtendVPNAccessWithProof, MintVPNAccess,
+  MintVPNAccessWithProof, Pricing, UpdateReferenceData, VPNAction, VPNData,
+  VPNDatum, VPNMidnightConfig, VPNReferenceData,
 }
-use utilities.{output_reference_to_tn}
+use utilities.{derive_nullifier_policy, output_reference_to_tn}
 use vpn
 
 const reference_cs = blake2b_224("reference_cs")
@@ -397,5 +398,137 @@ test burn_vpn_access_fail2_deadline() fail {
     VPNData(user_pkh, "r2", 112),
     BurnVPNAccess,
     burn_vpn_access_succeed_tx,
+  )
+}
+
+// ============================================================================
+// Midnight ZK Payment Tests
+// ============================================================================
+
+// Midnight config policy derived from reference_cs (must match validator logic)
+// The validator uses derive_nullifier_policy(reference_policy_id) for Midnight config
+fn get_midnight_config_policy_id() -> ByteArray {
+  derive_nullifier_policy(reference_cs)
+}
+
+// Mock ZK proof data
+const mock_zk_proof = blake2b_256("mock_zk_proof")
+
+const mock_nullifier = blake2b_256("mock_nullifier")
+
+const mock_state_root = blake2b_256("mock_state_root")
+
+// Nullifier policy derived from VPN policy
+fn get_nullifier_policy_id() -> ByteArray {
+  derive_nullifier_policy(vpn)
+}
+
+// Midnight config output for reference input
+fn midnight_config_output() -> Output {
+  Output {
+    address: vpn_address,
+    value: create_min_ada_token_value(get_midnight_config_policy_id(), "MidnightConfig", 1),
+    datum: InlineDatum(VPNMidnightConfig { verifier_hash: blake2b_256("verifier"), midnight_enabled: True }),
+    reference_script: None,
+  }
+}
+
+const midnight_config_input =
+  Input {
+    output_reference: mock_utxo_ref("20", 20),
+    output: midnight_config_output(),
+  }
+
+// Transaction for MintVPNAccessWithProof
+const mint_access_with_proof_succeed_tx =
+  Transaction {
+    ..placeholder,
+    inputs: [
+      Input(
+        mock_utxo_ref("0", 1),
+        mock_pub_key_output(
+          mock_pub_key_address("user"),
+          from_lovelace(2000000),
+        ),
+      ),
+    ],
+    reference_inputs: [nft_input, midnight_config_input],
+    outputs: [
+      vpn_output(VPNData(user_pkh, "r2", 110)),
+      // No payment to provider required - verified via ZK proof
+    ],
+    mint: add(
+      from_asset(vpn, output_reference_to_tn(mock_utxo_ref("0", 1)), 1),
+      get_nullifier_policy_id(),
+      mock_nullifier,
+      1,
+    ),
+    validity_range: after(100),
+    extra_signatories: [user_pkh],
+  }
+
+// Note: This test will pass because verify_midnight_payment is a placeholder
+// that always returns True. In production, actual Halo2 verification would run.
+test mint_access_with_proof_succeed() {
+  vpn_mint(
+    MintVPNAccessWithProof(
+      user_pkh,
+      "r2",
+      1,
+      mock_utxo_ref("0", 1),
+      mock_zk_proof,
+      mock_nullifier,
+      mock_state_root,
+    ),
+    mint_access_with_proof_succeed_tx,
+  )
+}
+
+test mint_access_with_proof_fail_wrong_region() fail {
+  vpn_mint(
+    MintVPNAccessWithProof(
+      user_pkh,
+      "invalid_region",
+      1,
+      mock_utxo_ref("0", 1),
+      mock_zk_proof,
+      mock_nullifier,
+      mock_state_root,
+    ),
+    mint_access_with_proof_succeed_tx,
+  )
+}
+
+test mint_access_with_proof_fail_missing_nullifier_mint() fail {
+  vpn_mint(
+    MintVPNAccessWithProof(
+      user_pkh,
+      "r2",
+      1,
+      mock_utxo_ref("0", 1),
+      mock_zk_proof,
+      mock_nullifier,
+      mock_state_root,
+    ),
+    Transaction {
+      ..mint_access_with_proof_succeed_tx,
+      // Only mint VPN token, not nullifier
+      mint: from_asset(vpn, output_reference_to_tn(mock_utxo_ref("0", 1)), 1),
+    },
+  )
+}
+
+test mint_access_with_proof_fail_missing_signature() fail {
+  vpn_mint(
+    MintVPNAccessWithProof(
+      user_pkh,
+      "r2",
+      1,
+      mock_utxo_ref("0", 1),
+      mock_zk_proof,
+      mock_nullifier,
+      mock_state_root,
+    ),
+    Transaction { ..mint_access_with_proof_succeed_tx, extra_signatories: [] },
   )
 }

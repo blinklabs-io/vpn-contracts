@@ -136,6 +136,123 @@ generate_vpn_burn_redeemer_json() {
   }'
 }
 
+# ============================================================================
+# Midnight ZK Payment Redeemer Functions
+# ============================================================================
+
+# Generate MintVPNAccessWithProof redeemer (constructor 4)
+# Args: $1=pkh, $2=region, $3=selection, $4=txin, $5=zk_proof, $6=nullifier, $7=state_root
+generate_vpn_access_with_proof_redeemer_json() {
+  local pkh="$1"
+  local region="$2"
+  local selection="$3"
+  local txin="$4"
+  local zk_proof="$5"
+  local nullifier="$6"
+  local state_root="$7"
+  local tx_id=$(echo "$txin" | cut -d'#' -f1)
+  local output_index=$(echo "$txin" | cut -d'#' -f2)
+
+  jq -n \
+    --arg b1 "$pkh" \
+    --arg b2 "$region" \
+    --argjson i1 "$selection" \
+    --arg b3 "$tx_id" \
+    --argjson i2 "$output_index" \
+    --arg b4 "$zk_proof" \
+    --arg b5 "$nullifier" \
+    --arg b6 "$state_root" \
+    '{
+    constructor: 4,
+    fields: [
+      {bytes: $b1},
+      {bytes: $b2},
+      {int: $i1},
+      {constructor: 0,
+      fields: [
+        {bytes: $b3},
+        {int: $i2}
+        ]
+      },
+      {bytes: $b4},
+      {bytes: $b5},
+      {bytes: $b6}
+    ]
+  }'
+}
+
+# Generate ExtendVPNAccessWithProof redeemer (constructor 5)
+# Args: $1=new_owner_pkh (empty string for no change), $2=selection, $3=zk_proof, $4=nullifier, $5=state_root
+generate_vpn_extend_with_proof_redeemer_json() {
+  local pkh="$1"
+  local selection="$2"
+  local zk_proof="$3"
+  local nullifier="$4"
+  local state_root="$5"
+
+  jq -n \
+    --arg b1 "$pkh" \
+    --argjson i1 "$selection" \
+    --arg b2 "$zk_proof" \
+    --arg b3 "$nullifier" \
+    --arg b4 "$state_root" \
+    '{
+    constructor: 5,
+    fields: [
+      {bytes: $b1},
+      {int: $i1},
+      {bytes: $b2},
+      {bytes: $b3},
+      {bytes: $b4}
+    ]
+  }'
+}
+
+# Generate VPNMidnightConfig datum
+# Args: $1=verifier_hash, $2=midnight_enabled (true/false)
+generate_midnight_config_datum_json() {
+  local verifier_hash="$1"
+  local enabled="$2"
+
+  if [ "$enabled" = "true" ]; then
+    jq -n --arg b1 "$verifier_hash" '{
+      constructor: 0,
+      fields: [
+        {bytes: $b1},
+        {constructor: 1, fields: []}
+      ]
+    }'
+  else
+    jq -n --arg b1 "$verifier_hash" '{
+      constructor: 0,
+      fields: [
+        {bytes: $b1},
+        {constructor: 0, fields: []}
+      ]
+    }'
+  fi
+}
+
+# Derive nullifier policy from VPN policy (matches contract logic)
+derive_nullifier_policy() {
+  local vpn_policy="$1"
+  python3 << EOF
+import hashlib
+vpn_policy = bytes.fromhex("$vpn_policy")
+suffix = b"nullifier"
+combined = vpn_policy + suffix
+result = hashlib.blake2b(combined, digest_size=32).digest()
+print(result.hex())
+EOF
+}
+
+# Derive midnight config policy from reference policy (matches contract logic)
+derive_midnight_config_policy() {
+  local ref_policy="$1"
+  # Uses same derivation as nullifier for simplicity
+  derive_nullifier_policy "$ref_policy"
+}
+
 # $1 = address
 get_address_biggest_lovelace(){
     cardano-cli query utxo ${TESTNET_MAGIC} --address $1 --out-file utxos.tmp

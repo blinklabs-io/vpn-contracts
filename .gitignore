@@ -6,3 +6,6 @@ build/
 docs/
 
 mainnet/wallets/ref-wallet.skey
+circuits/target/
+midnight/contract/node_modules/
+midnight/contract/circuits/target/
