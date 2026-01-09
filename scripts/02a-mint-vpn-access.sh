@@ -5,9 +5,9 @@ USER=$1
 source env.sh
 FILE_NAME="vpn-access"
 
-selection=1
-price=5000000
-duration=259200000
+selection=4
+price=75000000
+duration=5788800000
 region=757320656173742d31
 
 USER_ADDR=$(cat $WALLET_PATH/$USER.addr)
