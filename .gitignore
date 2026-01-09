@@ -6,3 +6,8 @@ build/
 docs/
 
 mainnet/wallets/ref-wallet.skey
+circuits/target/
+# Generated keys (regenerate with: cd circuits && cargo run -- keygen)
+circuits/keys/
+midnight/contract/node_modules/
+midnight/contract/circuits/target/

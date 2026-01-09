@@ -6,14 +6,17 @@ use aiken/collection/list.{any, at, filter, find}
 use aiken/crypto.{blake2b_256}
 use aiken/interval.{Finite, IntervalBound}
 use aiken/option.{is_none}
+use aiken/primitive/bytearray
 use cardano/address.{Address, Script, VerificationKey}
 use cardano/assets.{
-  AssetName, PolicyId, Value, from_lovelace, policies, to_dict, tokens,
-  without_lovelace,
+  AssetName, PolicyId, Value, from_lovelace, policies, quantity_of, to_dict,
+  tokens, without_lovelace,
 }
 use cardano/transaction.{
   InlineDatum, Input, Output, OutputReference, ValidityRange,
 }
+use halo2/compat.{from_int}
+use halo2/proof_verifier.{verifier}
 use types.{Pricing, VPNDatum}
 
 pub fn get_expiration_time_extend(
@@ -146,4 +149,77 @@ pub fn get_script_hash_from_address(address: Address) -> ByteArray {
 pub fn get_vkey_hash_from_address(address: Address) -> ByteArray {
   expect VerificationKey(vkey_hash) = address.payment_credential
   vkey_hash
+}
+
+// ============================================================================
+// Midnight ZK Payment Utilities (used by escrow validator)
+// ============================================================================
+
+/// Check if a nullifier token already exists (has been used)
+/// Nullifiers are minted as tokens to prevent double-spend of Midnight proofs
+pub fn nullifier_exists(
+  reference_inputs: List<Input>,
+  nullifier_policy_id: PolicyId,
+  nullifier: ByteArray,
+) -> Bool {
+  any(
+    reference_inputs,
+    fn(input) {
+      quantity_of(input.output.value, nullifier_policy_id, nullifier) > 0
+    },
+  )
+}
+
+/// Verify a Midnight ZK payment proof using Halo2 verification
+/// Uses Plutus V3 BLS12-381 primitives for on-chain proof verification
+///
+/// Parameters:
+/// - verifier_hash: Script hash of the Halo2 verifier (currently unused, verifier is embedded)
+/// - zk_proof: The ZK proof bytes from Midnight (serialized Halo2 proof)
+/// - selection: Pricing tier index that was paid for (public input 1)
+/// - nullifier: Nullifier bytes from the proof (public input 2, converted to scalar)
+/// - midnight_state_root: Midnight state root commitment (currently unused in circuit)
+///
+/// Returns: True if proof is valid, fails otherwise
+pub fn verify_midnight_payment(
+  _verifier_hash: ByteArray,
+  zk_proof: ByteArray,
+  selection: Int,
+  nullifier: ByteArray,
+  _midnight_state_root: ByteArray,
+) -> Bool {
+  // Convert public inputs to BLS12-381 scalar field elements
+  let pricing_tier_scalar = from_int(selection)
+  // Convert nullifier bytes to integer, then to scalar
+  // Use big-endian interpretation (first bytes are most significant)
+  let nullifier_int = bytearray.to_int_big_endian(nullifier)
+  let nullifier_scalar = from_int(nullifier_int)
+
+  // Call the Halo2 proof verifier with:
+  // - proof: The serialized Halo2 proof as Data (raw bytes)
+  // - i_1: pricing_tier as scalar (public input 1)
+  // - i_2: nullifier as scalar (public input 2)
+  verifier(zk_proof, pricing_tier_scalar, nullifier_scalar)
+}
+
+/// Calculate expiration time for Midnight proof-based extension
+/// Similar to get_expiration_time_extend but without payment verification
+pub fn get_expiration_time_extend_midnight(
+  selection: Int,
+  reference_inputs: List<Input>,
+  reference_policy_id: PolicyId,
+  now: Int,
+  expiration_time: Int,
+) -> Int {
+  expect pricing: List<Pricing> =
+    head_list(
+      unconstr_fields(get_ref_datum(reference_inputs, reference_policy_id)),
+    )
+  expect Some(Pricing { duration, .. }) = at(pricing, selection)
+  // No payment check needed - verified via ZK proof
+  if now < expiration_time {
+    expiration_time + duration
+  } else {
+    now + duration
+  }
 }
