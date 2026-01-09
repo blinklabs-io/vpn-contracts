@@ -6,6 +6,7 @@ source env.sh
 FILE_NAME="nft"
 
 USER_ADDR=$(cat $WALLET_PATH/$USER.addr)
+REF_ADDR=$(cat $WALLET_PATH/reference.addr)
 UTXO_IN_ADA=$(get_address_biggest_lovelace $USER_ADDR)
 echo "UTXO_IN_ADA: $UTXO_IN_ADA"
 NFT_FILE="$VALIDATOR_PATH/nft.plutus"
@@ -13,6 +14,8 @@ VPN_FILE="$VALIDATOR_PATH/vpn.plutus"
 VPN_ADDR=$(cat $VALIDATOR_PATH/vpn.addr)
 NFT_CS=$(cardano-cli hash script --script-file $NFT_FILE)
 echo "NFT_CS: $NFT_CS"
+VPN_CS=$(cardano-cli hash script --script-file $VPN_FILE)
+echo "VPN_CS: $VPN_CS"
 
 cardano-cli conway transaction build \
     ${TESTNET_MAGIC} \
@@ -24,7 +27,7 @@ cardano-cli conway transaction build \
     --change-address $USER_ADDR \
     --tx-out $VPN_ADDR+2000000+"1 $NFT_CS.70726f7669646572" \
     --tx-out-inline-datum-file $DATUMS_PATH/vpn_reference_data.json \
-    --tx-out $USER_ADDR+15865110 \
+    --tx-out $REF_ADDR+15830630 \
     --tx-out-reference-script-file $VPN_FILE \
     --out-file $TX_PATH/$FILE_NAME.raw
 
@@ -33,5 +36,5 @@ cardano-cli conway transaction sign \
     --tx-body-file $TX_PATH/$FILE_NAME.raw \
     --out-file $TX_PATH/$FILE_NAME.sign \
     --signing-key-file $WALLET_PATH/$USER.skey
-#exit
+
 cardano-cli conway transaction submit ${TESTNET_MAGIC} --tx-file $TX_PATH/$FILE_NAME.sign

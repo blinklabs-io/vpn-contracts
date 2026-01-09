@@ -25,6 +25,14 @@
     - update owner credential in datum
     - must be signed by current owner
 
+## Preview
+Data can be found in `preview/`.
+
+- reference nft policy id: `400d048d3548bde36426a6b7d8d576eb6689ec156d3e7203fe41e0b0`
+- vpn access token policy id: `a8f482df4a1963648fc3f248beb14f8916a5ba3c2bb943c67dbed5c2`
+- vpn validator address: `addr_test1zz50fqklfgvkxey0c0ey3043f7y3dfd68s4mjs7x0kldts4tza0gsjhr8s8v5f6axuprv6utq3h7ctm7xm3zd9fscd6sn2xm2z`
+- vpn reference script tx hash: `a4ba98190a4dedd6dfc88121f15ff9284bfc44d7d83ed9e1e470fd9b836c80fe#1`
+
 ## Preprod
 Data can be found in `preprod/`.
 
