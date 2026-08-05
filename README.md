@@ -1,5 +1,29 @@
 # vpn-contracts
 
+## Halo2 circuit dependency
+
+The Midnight/Cardano proof experiments under `circuits/` use the IOG fork of
+Halo2 as a pinned Git submodule at `circuits/vendor/iog-halo2`. Clone this
+repository recursively:
+
+```shell
+git clone --recurse-submodules https://github.com/blinklabs-io/vpn-contracts.git
+```
+
+For an existing checkout, initialize the pinned dependency before running
+Cargo:
+
+```shell
+git submodule update --init --recursive
+cd circuits
+cargo test --locked
+```
+
+The parent repository's gitlink is authoritative. It currently pins the
+`plutus_verification` branch source at commit
+`0bca06e58937fbe213a0530ecac9d8e0fed501d6`; Cargo uses the repository-relative
+path `vendor/iog-halo2` and does not depend on a machine-local checkout.
+
 ## Use cases
 
 * General

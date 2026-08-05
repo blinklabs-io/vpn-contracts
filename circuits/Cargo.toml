@@ -7,9 +7,9 @@ description = "Halo2 ZK circuit for VPN payment verification"
 license = "Apache-2.0"
 
 [dependencies]
-# Halo2 proving system (IOG fork with BLS12-381 support for Cardano)
-# Using local clone for debugging
-halo2_proofs = { path = "/tmp/iog-halo2" }
+# Halo2 proving system (IOG fork with BLS12-381 support for Cardano).
+# The repository is pinned by the parent Git submodule entry.
+halo2_proofs = { path = "vendor/iog-halo2" }
 halo2curves = "0.7"
 ff = "0.13"
 

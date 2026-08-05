@@ -1,0 +1,4 @@
+[submodule "circuits/vendor/iog-halo2"]
+	path = circuits/vendor/iog-halo2
+	url = https://github.com/input-output-hk/halo2.git
+	branch = plutus_verification
